@@ -294,6 +294,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CI runs of pushes to `main` no longer cancel each other: `.github/workflows/ci.yml`
+  groups push runs by commit SHA and cancels in progress only for a superseded pull
+  request run, so two quick merges each finish their run.
 - `shipping-issues`' `ci_watch.sh` now enforces `--timeout` on stock macOS, which has
   neither `timeout` nor `gtimeout`; the watch used to run unbounded there.
 - `shipping-issues`' Python scripts no longer write `__pycache__/` into the

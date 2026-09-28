@@ -9,8 +9,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseding a pull request cancels its previous run. A push to main is keyed
+  # by commit instead, so two quick merges neither cancel one another nor leave
+  # main's tip without a finished CI run.
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
