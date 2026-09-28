@@ -183,6 +183,8 @@ the rename unchanged and is most of what starting from this template buys:
   repository it needs a paid GitHub plan. Run it last, after the bootstrap commit is on
   `main`: from then on every change needs a pull request whose required checks pass,
   so the check list must name only jobs the new app still runs.
+  On a **private repository**, delete the workflows it cannot run and drop their
+  required contexts first — **REQUIRED:** `references/private-repository.md`.
 
 Both `just labels` and `just ruleset` write to the live repository, so they need a
 human's sign-off (`AGENTS.md`'s "Security and human approval") — for a brand-new

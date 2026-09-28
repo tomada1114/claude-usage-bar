@@ -153,6 +153,13 @@ secrets — no workflow edits. See docs/distribution.md.
 9. Optional, repository admin only: once the bootstrap commit is on `main`,
    protect it with `just ruleset` (`.github/rulesets/main.json`; it requires
    pull requests from then on, and needs a paid plan on a private repository)
+10. Private repository only, before step 9: delete
+    `.github/workflows/scorecard.yml`, `codeql.yml`, and `dependency-review.yml`
+    (they need a public repository or GitHub Advanced Security), remove the
+    `Attest build provenance` step from `release.yml` unless your plan supports
+    attestations on private repositories, and drop the `Dependency Review` context
+    from `.github/rulesets/main.json` — otherwise no pull request can merge. Details:
+    [private-repository.md](.agents/skills/starting-an-app/references/private-repository.md)
 
 To find any placeholders the script left untouched (the pattern uses `.`
 wildcards so the rename cannot rewrite this very command into your new names):

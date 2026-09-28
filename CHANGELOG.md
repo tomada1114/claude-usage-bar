@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Private-repository setup steps in `README.md` "Using This Template" and the
+  `starting-an-app` skill (`references/private-repository.md`): which workflows to
+  delete (Scorecard, CodeQL, Dependency Review), the `release.yml` attestation step to
+  remove, and the `Dependency Review` required context to drop before `just ruleset`.
+
 - `AGENTS.md` "Security and human approval" now forbids reading secret-shaped files
   (the list `scripts/guard/paths.sh` refuses to commit), requires sign-off before
   editing `.claude/settings.local.json`, lists what no local gate sees, and lists the
