@@ -242,6 +242,14 @@ Only what is mechanically decidable is blocked at commit time; whether a commit
 what is checked: the pre-commit hook's "Staged guard" section (`scripts/check-staged.sh`)
 refuses a secret-shaped staged path or credential-shaped staged content.
 
+Never read a secret-shaped file, even to check it: `.env` or `.env.*` (the
+`.example`/`.sample`/`.template` samples excepted), anything under a `secrets/`
+directory, `*.p12`, `*.pfx`, `*.p8`, `*.provisionprofile`, `*.mobileprovision`,
+`*.keychain`/`*.keychain-db`, `*key*.pem`, `private-key.*`, `.netrc`,
+`credentials.json`, `secrets.json`, and `Config/Local.xcconfig`. This is the same list
+`scripts/guard/paths.sh` refuses to commit, so the read rule and the commit guard
+agree; if a task seems to need one, ask the human for the non-secret fact instead.
+
 Get a human's sign-off before acting on any of these. No file in this repository
 blocks them mechanically today — this section is the rule itself, not a description
 of a check that enforces it.
@@ -251,6 +259,10 @@ of a check that enforces it.
   notarization, or release secret. Creating your own `Config/Local.xcconfig` is not
   such a change: it is gitignored, never committed, and changes nobody else's build.
 - Creating or pushing a release tag.
+- Editing `.claude/settings.local.json`, or a user-level settings file such as
+  `~/.claude/settings.json`: an agent adding an `allow` rule there widens its own
+  permissions, and neither file is committed, so no review ever sees it. The committed
+  `.claude/settings.json` is reviewed in its pull request like any other file.
 - Adding a new package dependency — see the dependency policy in
   `.claude/rules/project.md`.
 - Weakening any gate: lowering the coverage floor, disabling or relaxing a SwiftLint
@@ -294,6 +306,34 @@ None of them covers anything else in the list above: a force push or other histo
 rewrite, `--no-verify`, weakening a gate, entitlements or signing, a release tag, a
 new dependency, `just labels`, or `just ruleset`. A skill that reaches one of those
 stops and asks.
+
+### What no local gate sees
+
+Every local layer can be skipped, so these reach `main` only if CI or GitHub stops them
+(see "Enforcement layers" for the gaps each one leaves):
+
+- `git commit --no-verify`, a clone where `just install` never ran, or a commit made
+  outside this checkout's hooks — the pre-commit hook and staged guard never run.
+- An edit made through GitHub's web UI or API, which touches no local hook.
+- A secret inside a file whose path and content pattern the guard does not know.
+- Any tool other than Claude Code: `.claude/settings.json` binds nothing else.
+
+### GitHub settings a new repository must enable
+
+"Use this template" copies files, not settings, so a repository's admin turns these on
+once under Settings › Advanced Security (Code security on older UIs):
+
+- **Secret scanning** and **Push protection** — the server-side layer for secrets that
+  the staged guard misses or a bypass skips; push protection blocks a detected secret
+  at `git push`.
+- **Private vulnerability reporting** — `SECURITY.md` sends reporters to a private
+  security advisory, which this setting enables.
+- **Dependabot alerts** — `.github/dependabot.yml` configures version updates; alerts
+  for known-vulnerable dependencies are a separate switch.
+- The `main` ruleset, applied by `just ruleset`. `.github/rulesets/main.json`
+  deliberately lists no `bypass_actors`: a bypass lets an admin, or an agent acting
+  with an admin's token, merge without the PR and green checks the ruleset exists to
+  require, and an emergency change can still go through a PR.
 
 ## Repository scripts
 

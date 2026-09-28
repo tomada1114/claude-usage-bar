@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `AGENTS.md` "Security and human approval" now forbids reading secret-shaped files
+  (the list `scripts/guard/paths.sh` refuses to commit), requires sign-off before
+  editing `.claude/settings.local.json`, lists what no local gate sees, and lists the
+  GitHub settings a new repository must enable (secret scanning, push protection,
+  private vulnerability reporting, Dependabot alerts) and why the `main` ruleset has
+  no bypass actor.
+
 - `.claude/rules/project.md`'s Toolchain Pinning is now the one statement of the
   pin-bump policy: bot PRs (Dependabot `deps:`/`ci:`, Renovate `deps:`) after a 7-day
   cooldown, and `.xcode-version` as the single hand-bumped pin with the reason and
