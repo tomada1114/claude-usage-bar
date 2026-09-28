@@ -282,6 +282,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SIGINT) and prints every log it had not reported yet, marked `(interrupted)`, with a
   new `ERR_TESTS_INTERRUPTED`; `scripts/tests/run_test.sh` now covers the runner itself
 
+### Removed
+
+- The committed `.claude/settings.json` no longer registers the owner's personal
+  plugin marketplace or enables a plugin from it for everyone who opens the
+  repository; it keeps only `permissions` and `hooks`, and `AGENTS.md`'s Enforcement
+  layers row now describes both.
+
 ### Fixed
 
 - `shipping-issues`' `ci_watch.sh` now enforces `--timeout` on stock macOS, which has
