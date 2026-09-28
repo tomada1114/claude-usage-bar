@@ -1,5 +1,10 @@
 # Architecture
 
+This page describes the layers every app cut from this template starts with. What an
+app decides on top of them — its shape, sandbox posture, persistence, dependencies,
+distribution, macOS floor, and permissions — is recorded as ADRs under
+[`docs/architecture/`](architecture/README.md), whose `README.md` is the index.
+
 ## Layers
 
 ```

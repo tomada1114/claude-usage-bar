@@ -27,8 +27,9 @@ answer to "is this in scope?". Fill in every `TODO:` below right after the renam
   line an eager implementer crosses first: moving anything from here to a goal is a
   human's decision, not an implementer's.
 - **Where these decisions are recorded** — TODO: where the reasoning behind the three
-  entries above lives (a `docs/` file, a design issue, a decision log), so a reader can
-  find why and not only what.
+  entries above lives — an ADR under `docs/architecture/` (see "Before changing the
+  architecture"), a design issue, or another decision log — so a reader can find why
+  and not only what.
 
 ## Quick Reference
 
@@ -144,6 +145,30 @@ Config/Debug.xcconfig       # Debug-only build settings project.yml cannot expre
   by `.swiftlint.yml`'s `no_print_in_sources` (`.claude/rules/swift.md` › Logging)
 - `MyApp.xcodeproj` is generated — edit `project.yml` instead
 
+## Before changing the architecture
+
+An app cut from this template records its architecture decisions as ADRs under
+`docs/architecture/` — start at its `README.md`, the index, whose statuses say what is
+decided and what is only proposed. `docs/architecture.md` describes the layers every app
+starts with; the ADRs record what the app decided on top of them. A change to any of
+these owes an ADR, as `recording-architecture-decisions` sets out:
+
+- a new target (`project.yml`, `Package.swift`) or a new Core port;
+- the app shape — a windowed app or a menu-bar agent;
+- the sandbox posture — the App Sandbox on or off, or a new entitlement;
+- persistence — where and in what format the app keeps state;
+- a new dependency;
+- distribution — the Mac App Store, Developer ID with notarization, an in-app updater;
+- `deploymentTarget` in `project.yml`, with `platforms:` in `Package.swift`;
+- a TCC permission — Accessibility, Input Monitoring, Screen Recording, or any other
+  privacy grant.
+
+An agent writes an ADR as Proposed; only a human accepts it. An ADR records reasoning and
+grants nothing: an entitlement, a signing change, or a new dependency still needs the
+sign-off "Security and human approval" asks for. The template repository ships the index
+empty — its own reasoning lives in `README.md`'s Design Philosophy, and ADRs belong to
+the apps cut from it.
+
 ## Skills
 
 Each skill owns one kind of change. Load the one whose subject you are working on.
@@ -172,6 +197,7 @@ tool that sees the generated copy rather than the authored one:
 | `triaging-issues` | filing or triaging an issue: the labels in `.github/labels.yml` (`just labels`), priority tiers, and the `Depends on #N` convention |
 | `authoring-skills` | adding, editing, or reviewing a skill: authoring under `.agents/skills/`, the `just agents-sync` mirror, frontmatter, layout, and size limits |
 | `updating-docs` | deciding whether a change owes a documentation update and which surface it lands on: `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, `docs/*.md`, a skill, or a `///` comment |
+| `recording-architecture-decisions` | the ADR tree under `docs/architecture/`: whether a change owes an ADR (a target or port, app shape, sandbox posture, persistence, a dependency, distribution, `deploymentTarget`, a TCC permission), an ADR's statuses, amending versus superseding, and fact discipline — every external claim with a URL and a checked date |
 | `writing-repo-scripts` | writing or testing a shell script under `scripts/`, `.githooks/pre-commit`, or `scripts/tests/`: why bash, refusing or skipping outside a git checkout, the stderr contract by example, and `scripts/tests/lib.sh` |
 | `running-the-app` | seeing a change work in the real app: `just run` and confirming the running process is the fresh build, reading `just logs`, screenshotting a window, a throwaway XCUITest, the human hand-off for a TCC prompt, and the evidence a PR then carries |
 | `integrating-system-apis` | calling a macOS system API from `MyAppPlatform`: choosing the mechanism (`CGEventTap`, `AXObserver`, a Carbon hotkey), a C callback's refcon and teardown under Swift 6 strict concurrency, TCC-gated permissions (Accessibility, Input Monitoring, Screen Recording), and what can be tested where |

@@ -92,6 +92,18 @@ path-scoped rules give LLMs the project's standards, architecture, and hard
 prohibitions (never lower the coverage floor, never disable safety lint
 rules) — reducing review cycles.
 
+### Why an ADR tree that ships empty?
+
+The template's own decisions are the ones above, and this section is where
+they live. An app cut from the template makes decisions of a different kind —
+its shape, its sandbox posture, where it keeps state, how it ships, which
+permissions it asks for — and records each as an Architecture Decision Record
+under `docs/architecture/`, whose index the template ships empty. `AGENTS.md`'s
+"Before changing the architecture" names the changes that owe one. An accepted
+ADR takes small corrections in place, dated; a replaced decision gets a new
+ADR rather than a rewrite, so the reasoning that held at the time stays
+readable.
+
 ### Why secret-gated notarization?
 
 The release workflow always produces a DMG; when Developer ID secrets are
@@ -191,6 +203,7 @@ ad-hoc-signed Debug builds lose the grant on every rebuild.
 
 - [Getting Started](docs/getting-started.md)
 - [Architecture](docs/architecture.md)
+- [Architecture Decisions](docs/architecture/README.md)
 - [Distribution & Signing](docs/distribution.md)
 - [Adding iOS Later](docs/adding-ios.md)
 

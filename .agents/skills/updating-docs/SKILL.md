@@ -61,6 +61,10 @@ another's content.
 - `docs/architecture.md` — the layer diagram, "Where new code goes", and the optional
   dependencies worth reaching for. It covers the same ground as `AGENTS.md`'s
   Architecture section, so a moved boundary updates both in the same pull request.
+- `docs/architecture/` — an app's Architecture Decision Records and their index, which
+  the template ships empty. `recording-architecture-decisions` owns whether a change
+  owes an ADR and how one is written; a moved boundary it records still updates
+  `docs/architecture.md` and `AGENTS.md`'s Architecture section to match.
 - `docs/getting-started.md`, `docs/adding-ios.md`, `docs/distribution.md` — single-topic
   how-tos: first setup and everyday commands, the runbook for adding an iOS target, and
   the release, signing, and notarization flow. Each owns its one topic; a change to that
