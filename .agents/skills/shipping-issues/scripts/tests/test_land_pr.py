@@ -61,7 +61,7 @@ class LandPrTest(unittest.TestCase):
                 proc, calls = run_script([flag], {})
 
                 self.assertEqual(proc.returncode, 0)
-                self.assertIn("land_pr.sh — Merge a green PR", proc.stdout)
+                self.assertIn("land_pr.sh -- Merge a green PR", proc.stdout)
                 self.assertIn("Exit codes: 0 = merged", proc.stdout)
                 self.assertNotIn("gh:", proc.stdout)
                 self.assertEqual(calls, [])

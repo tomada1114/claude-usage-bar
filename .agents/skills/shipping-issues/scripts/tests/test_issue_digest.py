@@ -67,13 +67,13 @@ class SqueezeTest(unittest.TestCase):
 
     def test_demotes_headings(self):
         text = "# Title\nbody"
-        self.assertTrue(idg.squeeze(text, 200).startswith("▸ Title"))
+        self.assertTrue(idg.squeeze(text, 200).startswith("> Title"))
 
     def test_truncates_over_limit(self):
         text = "x" * 50
         out = idg.squeeze(text, 10)
-        self.assertTrue(out.endswith("…[truncated]"))
-        self.assertLessEqual(len(out) - len(" …[truncated]"), 10)
+        self.assertTrue(out.endswith("...[truncated]"))
+        self.assertLessEqual(len(out) - len(" ...[truncated]"), 10)
 
 
 class ExtractDepsTest(unittest.TestCase):
@@ -111,9 +111,12 @@ class ExtractDepsTest(unittest.TestCase):
         self.assertEqual(deps["depends_on"], [5])
         self.assertEqual(deps["mentions"], [])
 
-    def test_japanese_dependency_phrasing(self):
-        deps = idg.extract_deps("#5 に依存", "t", self_number=1)
+    def test_dependencies_section_spelling_from_triaging_issues(self):
+        # The spelling `triaging-issues` asks every issue to use.
+        body = "## Dependencies\n\nDepends on #5\nBlocks #9\n"
+        deps = idg.extract_deps(body, "t", self_number=1)
         self.assertEqual(deps["depends_on"], [5])
+        self.assertEqual(deps["blocks"], [9])
 
 
 class DaysSinceTest(unittest.TestCase):
@@ -318,7 +321,7 @@ class DependencyBlockLabelsTest(unittest.TestCase):
                           f"{name!r} should be a recognized dependency-block label")
 
     def test_bare_blocked_not_recognized(self):
-        # Deliberately excluded — ambiguous with READY_NEGATIVE_LABELS's
+        # Deliberately excluded -- ambiguous with READY_NEGATIVE_LABELS's
         # general "blocked" and not specific to a dependency edge.
         self.assertNotIn(idg.normalize_label("blocked"), idg.DEPENDENCY_BLOCK_LABELS)
 
@@ -355,7 +358,7 @@ class ResolveDesignLabelTest(unittest.TestCase):
 class DigestRunner:
     """Runs main() in-process (not via subprocess) against a fake `gh` on
     PATH, so coverage sees the code these tests exercise. Only the external
-    `gh` process itself is out of process — issue_digest.py's own code runs
+    `gh` process itself is out of process -- issue_digest.py's own code runs
     in this interpreter.
 
     A mixin rather than a base TestCase: several classes below need `_run`, and
@@ -496,7 +499,7 @@ class MainEndToEndTest(DigestRunner, unittest.TestCase):
         self.assertIn("NEEDS-DESIGN:blocked: design", out)
 
     def test_stale_dependency_label_detected_when_all_deps_closed(self):
-        # #2 is not in the open-issue list at all, i.e. closed — so #1's only
+        # #2 is not in the open-issue list at all, i.e. closed -- so #1's only
         # recorded dependency has closed and its label is stale.
         issues = [gh_issue(1, title="stale label", labels=["priority: P1",
                             "blocked: dependency"], body="depends on #2")]
@@ -521,7 +524,7 @@ class MainEndToEndTest(DigestRunner, unittest.TestCase):
         self.assertEqual(rec["stale_dependency_labels"], [])
 
     def test_not_stale_when_no_dependency_recorded(self):
-        # The label is present but no edge was ever declared or scraped — the
+        # The label is present but no edge was ever declared or scraped -- the
         # edge may be expressed somewhere the regex/contract scrape misses,
         # so this is deliberately left alone rather than flagged.
         issues = [gh_issue(1, title="no recorded dep",
@@ -630,7 +633,7 @@ class ShipContractTest(unittest.TestCase):
         c = idg.parse_ship_contract(body)
         self.assertEqual(c["tier"], "P0")
         self.assertEqual(c["depends_on"], [7])
-        # A field only the first block set survives — the blocks are merged,
+        # A field only the first block set survives -- the blocks are merged,
         # not swapped, so correcting one field does not silently drop the rest.
         self.assertEqual(c["touches"], ["a/"])
 
@@ -664,7 +667,7 @@ class ContractIntegrationTest(DigestRunner, unittest.TestCase):
         rc, out, err = self._run(["--select"], issues)
         self.assertEqual(rc, 0, err)
         self.assertIn("select: #2", out)
-        # Settled, so it prints plain — not as the `~P0` a score guess gets.
+        # Settled, so it prints plain -- not as the `~P0` a score guess gets.
         self.assertIn("[P0]", out)
         self.assertNotIn("[~P0]", out)
 
@@ -717,9 +720,9 @@ class ContractIntegrationTest(DigestRunner, unittest.TestCase):
         ]
         rc, out, err = self._run(["--audit"], issues)
         self.assertEqual(rc, 0, err)
-        self.assertIn("contract: 1/3 complete · 1 partial · 1 missing", out)
+        self.assertIn("contract: 1/3 complete | 1 partial | 1 missing", out)
         self.assertIn("missing: #3", out)
-        self.assertIn("partial: #2 — no blocked-by,touches", out)
+        self.assertIn("partial: #2 -- no blocked-by,touches", out)
 
 
 class ComposableOutputTest(DigestRunner, unittest.TestCase):
@@ -745,7 +748,7 @@ class ComposableOutputTest(DigestRunner, unittest.TestCase):
         self.assertIn("the P0 body", out)
         self.assertIn("the P1 body", out)
         self.assertNotIn("the P2 body", out)
-        # All three still ranked — unlike --issue, --detail-top does not filter.
+        # All three still ranked -- unlike --issue, --detail-top does not filter.
         self.assertIn("next  : #3", out)
 
     def test_detail_takes_explicit_numbers_too(self):

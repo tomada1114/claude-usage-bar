@@ -244,6 +244,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `shipping-issues` is adapted to this template: its `SKILL.md` fits the
+  `authoring-skills` 200-line budget (step detail moved to
+  `references/implement-and-review.md` and `references/pr-ci-merge.md`), and the
+  whole skill tree is English-only ASCII. Every spawn names a `.claude/agents/` tier
+  (`executor`, `architect`, `worker`) instead of a bare model, a resume goes to the
+  still-running agent via `SendMessage`, and Codex CLI runs each step inline. It
+  reviews every branch at `/code-review medium`, watches CI in the background (or in
+  the foreground under the Bash tool's 600-second cap), clears `blocked: dependency`
+  right after each merge as `triaging-issues` requires, and sends back a user-facing
+  change that lacks a `CHANGELOG.md` entry. `worktree_setup.sh` copies
+  `Config/Local.xcconfig` into each worktree, and `preflight.sh` prefers a justfile
+  recipe (`just check`) over any `package.json` or Makefile target
 - `just run` relaunches the build it just made instead of activating an old process:
   `scripts/run-app.sh` quits every running instance of this app — matched by bundle
   identifier, never by process name — and waits for it to exit, bounded, reporting a

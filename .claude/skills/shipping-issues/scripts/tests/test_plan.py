@@ -95,7 +95,7 @@ class SlugTest(unittest.TestCase):
         self.assertFalse(slug.endswith("-"))
 
     def test_non_ascii_title_yields_an_empty_slug_not_mojibake(self):
-        self.assertEqual(plan.slugify("テストを直す"), "")
+        self.assertEqual(plan.slugify("\u30c6\u30b9\u30c8\u3092\u76f4\u3059"), "")
 
     def test_branch_name_takes_type_from_the_title(self):
         row = rank_row(85, title="fix(test): composed handler")
@@ -107,7 +107,7 @@ class SlugTest(unittest.TestCase):
         self.assertTrue(plan.branch_name(row, []).startswith("chore/85-"))
 
     def test_branch_name_survives_a_title_with_no_usable_slug(self):
-        self.assertEqual(plan.branch_name(rank_row(7, title="日本語"), []), "chore/7")
+        self.assertEqual(plan.branch_name(rank_row(7, title="\u65e5\u672c\u8a9e"), []), "chore/7")
 
 
 class PathCollisionTest(unittest.TestCase):
@@ -139,7 +139,7 @@ class PathCollisionTest(unittest.TestCase):
 
     def test_an_undeclared_side_does_not_collide_on_its_own(self):
         # Emptiness is handled by the PARTIAL confidence signal, not by
-        # pretending an unknown is a conflict — otherwise no repo without
+        # pretending an unknown is a conflict -- otherwise no repo without
         # contracts could ever group.
         self.assertFalse(plan.paths_collide([], ["tests/"]))
 
@@ -192,7 +192,7 @@ class GroupBatchesTest(unittest.TestCase):
 
 class MainTest(unittest.TestCase):
     """main() with preflight.sh and issue_digest.py stubbed at the run()
-    boundary — the two are covered by their own test modules, and what matters
+    boundary -- the two are covered by their own test modules, and what matters
     here is how plan.py combines them."""
 
     def _run(self, argv, rows, preflight=PREFLIGHT, preflight_rc=0,
@@ -328,7 +328,7 @@ class MainTest(unittest.TestCase):
             [], rows,
             stale_dependency={12: ["blocked: dependency"], 15: ["blocked: dependency"]})
         self.assertIn(
-            "stale-labels: #12,#15 → blocked: dependency with every "
+            "stale-labels: #12,#15 -> blocked: dependency with every "
             "dependency closed; clear with apply_priority_labels.py "
             "--clear-dependency 12 --clear-dependency 15",
             out,
@@ -380,8 +380,8 @@ class MainTest(unittest.TestCase):
         self.assertEqual(payload["stale_dependency_labels"], [12])
 
     def test_the_github_probe_is_paid_for_once(self):
-        # preflight is called twice — the first call is what reveals where the
-        # profile cache lives — but only the second one may reach GitHub.
+        # preflight is called twice -- the first call is what reveals where the
+        # profile cache lives -- but only the second one may reach GitHub.
         self._run([], [rank_row(1, touches=["a/"])])
         self.assertEqual(len(self.preflight_calls), 2)
         self.assertNotIn("--with-github", self.preflight_calls[0])

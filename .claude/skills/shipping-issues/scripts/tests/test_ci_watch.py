@@ -80,7 +80,7 @@ def install_stub(bin_dir: Path, name: str, body: str) -> None:
 
     Used to shadow a real external command (sleep, timeout) with a
     deterministic, instant stand-in, the same PATH-stubbing technique
-    _fakegh.py already uses for `gh` — so a hard-coded `sleep 20` retry or a
+    _fakegh.py already uses for `gh` -- so a hard-coded `sleep 20` retry or a
     real `timeout`/`gtimeout` dependency doesn't make a test slow or
     environment-dependent.
     """
@@ -138,7 +138,7 @@ class CiWatchTest(unittest.TestCase):
                 proc, calls = run_script([flag], {})
 
                 self.assertEqual(proc.returncode, 0)
-                self.assertIn("ci_watch.sh — Wait for a PR's checks", proc.stdout)
+                self.assertIn("ci_watch.sh -- Wait for a PR's checks", proc.stdout)
                 self.assertIn("Exit codes: 0 = PASS", proc.stdout)
                 self.assertEqual(calls, [])
 
@@ -491,7 +491,7 @@ class CiWatchFallbackTest(unittest.TestCase):
     def test_failing_commit_status_fails_without_an_actions_run(self):
         # Commit statuses are the other half of what a fine-grained PAT can
         # read, and the CI systems that post them have no Actions run to fetch
-        # a log from — so the check is listed but no log dump is attempted.
+        # a log from -- so the check is listed but no log dump is attempted.
         pr = "34"
         self.args = [pr]
         proc, calls = self.forbidden(pr, {

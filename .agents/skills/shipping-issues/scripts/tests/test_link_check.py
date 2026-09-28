@@ -114,7 +114,7 @@ class LinkCheckTest(unittest.TestCase):
 
                 self.assertEqual(proc.returncode, 0)
                 self.assertIn(
-                    "link_check.sh — Verify a PR will auto-close its issue",
+                    "link_check.sh -- Verify a PR will auto-close its issue",
                     proc.stdout,
                 )
                 self.assertIn("Exit codes: 0 = LINKED", proc.stdout)
@@ -136,7 +136,7 @@ class LinkCheckTest(unittest.TestCase):
 
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn(
-            f"fix: would append 'Closes #{issue}' to PR #{pr} body (dry run — no change made)\n",
+            f"fix: would append 'Closes #{issue}' to PR #{pr} body (dry run -- no change made)\n",
             proc.stdout,
         )
         self.assertIn("verdict: LINKED\n", proc.stdout)

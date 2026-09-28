@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ci_watch.sh — Wait for a PR's checks to settle and report a compact verdict.
+# ci_watch.sh -- Wait for a PR's checks to settle and report a compact verdict.
 #
 # Usage: ci_watch.sh <pr-number> [--timeout SECONDS] [--log-bytes N]
 #
@@ -8,11 +8,11 @@
 #   check_source: checks | actions+statuses  (which API the verdict came from)
 #   mergeable / merge_state / review_decision
 #   on FAIL: the failing check names plus the tail of each failing run's log
-#   ERROR means the check results could not be read at all — never a green
+#   ERROR means the check results could not be read at all -- never a green
 #
 # Two ways to read a PR's CI, because one of them needs a permission not every
-# token can hold. GitHub's fine-grained PATs have no Checks permission at all —
-# it is absent from the permission list and from the token-creation UI — so for
+# token can hold. GitHub's fine-grained PATs have no Checks permission at all --
+# it is absent from the permission list and from the token-creation UI -- so for
 # such a token `gh pr checks` and `gh pr view --json statusCheckRollup` both
 # fail with "Resource not accessible by personal access token". This script
 # probes the check-runs API once and, when it is unreadable, falls back to what
@@ -25,7 +25,7 @@
 
 set -uo pipefail
 
-# print_help — the script's own usage, derived straight from this header
+# print_help -- the script's own usage, derived straight from this header
 # comment so the text lives in exactly one place. Must run BEFORE the
 # positional PR argument below is consumed, or `ci_watch.sh --help` sets
 # PR="--help" and forwards it straight to `gh` instead of showing this.
@@ -93,7 +93,7 @@ if [[ $rollup_rc -ne 0 ]]; then
   # (the fine-grained PAT case) the PR reads fine and only its check runs
   # are forbidden. Reading the head commit tells them apart, and it is the
   # value the fallback needs anyway. It has to be a field `gh` cannot answer
-  # locally — `--json number` just echoes the number back without ever
+  # locally -- `--json number` just echoes the number back without ever
   # reaching GitHub, so it succeeds even for a PR that does not exist.
   HEAD_SHA="$(gh pr view "$PR" --json headRefOid -q '.headRefOid' 2>/dev/null)"
   if [[ -z "$HEAD_SHA" ]]; then
@@ -209,7 +209,7 @@ if [[ "$CHECK_SOURCE" == "checks" ]]; then
         if [[ -n "$log" ]]; then
           printf '%s\n' "$log" | sed 's/^/  /'
         else
-          echo "  (no log available for run $run_id — gh run view --log-failed failed)"
+          echo "  (no log available for run $run_id -- gh run view --log-failed failed)"
         fi
       done
   exit 1
@@ -246,7 +246,7 @@ poll_statuses() {
 has_pending() {
   local runs="$1" statuses="$2"
   # `exit` inside an awk rule still runs END, so the match has to be recorded
-  # in a flag and turned into the exit status there — an `exit 0` in the rule
+  # in a flag and turned into the exit status there -- an `exit 0` in the rule
   # would be overwritten by END's own exit.
   if [[ -n "$runs" ]] && printf '%s\n' "$runs" \
       | awk -F'\t' '$3 != "completed" { found = 1; exit } END { exit !found }'; then
@@ -341,7 +341,7 @@ if [[ -n "$failed_runs" ]]; then
         if [[ -n "$log" ]]; then
           printf '%s\n' "$log" | sed 's/^/  /'
         else
-          echo "  (no log available for run $run_id — gh run view --log-failed failed)"
+          echo "  (no log available for run $run_id -- gh run view --log-failed failed)"
         fi
       done
 fi

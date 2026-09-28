@@ -60,7 +60,7 @@ def run_script(args, repo):
 
 
 def run_script_gh(args, repo, *, responses=None, exits=None):
-    """Like run_script, but with a caller-supplied FakeGh routing table —
+    """Like run_script, but with a caller-supplied FakeGh routing table --
     used only by the --with-github tests, which need `gh auth status` /
     `gh repo view` to answer something other than the default "[]"."""
     with FakeGh(responses or {}, exits=exits or {}) as fake:
@@ -86,7 +86,7 @@ class PreflightTest(unittest.TestCase):
 
                     self.assertEqual(proc.returncode, 0)
                     self.assertIn(
-                        "preflight.sh — Verify the local repo is in a state",
+                        "preflight.sh -- Verify the local repo is in a state",
                         proc.stdout,
                     )
                     self.assertIn("Exit codes:", proc.stdout)
@@ -210,6 +210,28 @@ class PreflightTest(unittest.TestCase):
         self.assertNotEqual(hash_line, "lockfile_hash: none")
         self.assertEqual(len(hash_line.split(": ", 1)[1]), 12)
 
+    def test_justfile_check_recipe_wins_over_package_json_and_makefile(self):
+        # This template's gate is `just check`; a package.json added later for
+        # some tooling must not demote the baseline to its `test` script.
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            make_repo(repo, origin=True)
+            (repo / "justfile").write_text(
+                "verify-hooks:\n\techo hooks\n\n"
+                "check: verify-hooks test\n\techo check\n\n"
+                "test-fast filter:\n\techo fast\n",
+                encoding="utf-8",
+            )
+            (repo / "package.json").write_text(
+                json.dumps({"scripts": {"test": "echo unit"}}), encoding="utf-8"
+            )
+            (repo / "Makefile").write_text("verify:\n\techo hi\n", encoding="utf-8")
+            proc, _ = run_script([], repo)
+
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("verify_command: just check\n", proc.stdout)
+        self.assertIn("verify_source: justfile:check\n", proc.stdout)
+
     def test_verify_command_falls_back_to_makefile_over_language_default(self):
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
@@ -326,7 +348,7 @@ class PreflightTest(unittest.TestCase):
 
     def test_recorded_worktree_viability_survives_an_invalidation(self):
         # worktree_viable is measured by running a gate in a real worktree, not
-        # derived from a config file, so a lockfile bump must not discard it —
+        # derived from a config file, so a lockfile bump must not discard it --
         # that value cost a whole dependency install to learn.
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
@@ -337,7 +359,7 @@ class PreflightTest(unittest.TestCase):
             run_script(["--profile-cache", str(cache)], repo)
             run_script(["--profile-cache", str(cache),
                         "--set-worktree-viable", "no"], repo)
-            (repo / "uv.lock").write_text("v2 — different lockfile", encoding="utf-8")
+            (repo / "uv.lock").write_text("v2 -- different lockfile", encoding="utf-8")
             after, _ = run_script(["--profile-cache", str(cache)], repo)
 
         self.assertIn("profile_cache: WRITTEN\n", after.stdout)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""file_followup.py — File a follow-up issue found while shipping another one.
+"""file_followup.py -- File a follow-up issue found while shipping another one.
 
 A shipping run turns up real defects that are not the issue being shipped:
 a sibling of the bug just fixed, a latent gap the diff walked past, a scope
@@ -14,7 +14,7 @@ gets the canonical name created.
 
 The target repo is resolved once and echoed on every line of output. This
 script writes to GitHub from whatever directory it is invoked in, and a
-sub-agent's cwd is not always the repo being shipped — an unqualified `gh`
+sub-agent's cwd is not always the repo being shipped -- an unqualified `gh`
 would happily file the finding against an unrelated repo that merely happens
 to be the working directory. Pass `--repo` when in any doubt.
 
@@ -26,7 +26,7 @@ Usage:
                      [--dry-run] [--json]
 
 `--needs-design` marks the new issue design-not-settled (`blocked: design` or
-this repo's existing equivalent) — use it only when the finding names an open
+this repo's existing equivalent) -- use it only when the finding names an open
 design question rather than a verified fix. See
 references/filing-followups.md. `--tier` is still required even then, so the
 issue ranks correctly the moment the design is decided.
@@ -34,7 +34,7 @@ issue ranks correctly the moment the design is decided.
 Exit codes:
     0 = issue created (or --dry-run resolved cleanly)
     1 = usage/environment error
-    2 = no write access to this repo — report the finding in the run summary
+    2 = no write access to this repo -- report the finding in the run summary
         instead, and do not retry
     3 = invalid argument (unknown tier, missing body file)
 """
@@ -97,7 +97,7 @@ def resolve_tier_label(tier: str, existing: list[str], dry_run: bool) -> str:
     Preference order: the canonical `priority: P<n>` if the repo already has it,
     then any existing alias that means the same tier (`p2`, `high priority`,
     ...), then create the canonical one. Picking an alias the repo already
-    carries is the whole point — `issue_digest.py` ranks by whatever spelling
+    carries is the whole point -- `issue_digest.py` ranks by whatever spelling
     is present, so introducing a second one would leave half the backlog
     ranked by a label nobody else writes.
     """
@@ -124,7 +124,7 @@ def ship_contract(args: Any) -> str:
     """The `<!-- ship: ... -->` block for a newly filed issue.
 
     Written on every issue this skill files, because the alternative is a later
-    run re-deriving these facts from the prose — which is exactly the cost the
+    run re-deriving these facts from the prose -- which is exactly the cost the
     block exists to remove. `blocked-by` and `touches` are always emitted, even
     as `none` and `*`: an omitted field is indistinguishable from an unconsidered
     one, and `issue_digest.py --audit` has to be able to tell those apart.
@@ -161,7 +161,7 @@ def main() -> int:
                    help="extra label (repeatable); silently skipped if the repo lacks it")
     p.add_argument("--needs-design", action="store_true",
                    help="mark the new issue design-not-settled (blocked: "
-                        "design or this repo's equivalent) — excludes it "
+                        "design or this repo's equivalent) -- excludes it "
                         "from automatic selection until the design is decided")
     p.add_argument("--area", metavar="SLUG",
                    help="the part of the codebase this belongs to; goes into "
@@ -169,7 +169,7 @@ def main() -> int:
     p.add_argument("--touches", metavar="PATHS",
                    help="comma-separated paths the fix will land in, or '*' if "
                         "genuinely unknown. This is what lets a later run group "
-                        "this issue for parallel work without judging it — an "
+                        "this issue for parallel work without judging it -- an "
                         "omitted value reads as 'touches nothing', which is why "
                         "'*' exists to say the honest thing instead")
     p.add_argument("--blocked-by", metavar="NUMBERS",
@@ -197,7 +197,7 @@ def main() -> int:
     REPO = (proc.stdout or "").strip()
     if proc.returncode != 0 or not REPO:
         target = args.repo or "the current directory"
-        print(f"error: cannot resolve {target} — run inside the repo or pass "
+        print(f"error: cannot resolve {target} -- run inside the repo or pass "
               f"--repo OWNER/NAME\n{(proc.stderr or '').strip()}", file=sys.stderr)
         return 1
 
@@ -209,7 +209,7 @@ def main() -> int:
         print(f"error: --body-file is empty: {args.body_file}", file=sys.stderr)
         return 3
     if args.found_while:
-        body += f"\n\n---\n\n*#{args.found_while} の作業中に発見 / found while shipping #{args.found_while}.*\n"
+        body += f"\n\n---\n\n*Found while shipping #{args.found_while}.*\n"
     contract = ship_contract(args)
     body += "\n" + contract + "\n"
 

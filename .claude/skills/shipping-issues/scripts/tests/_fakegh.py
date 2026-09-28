@@ -1,4 +1,4 @@
-"""_fakegh.py — Shared helper: install a fake `gh` on PATH for scripts/ tests.
+"""_fakegh.py -- Shared helper: install a fake `gh` on PATH for scripts/ tests.
 
 The scripts under test shell out to the real `gh` CLI. Tests never touch a
 real GitHub repo, so this writes a stand-in `gh` executable that answers from
@@ -7,7 +7,7 @@ longest matching prefix wins, so "issue list" and "issue list --state open"
 can both be registered and the more specific one wins when both apply) and
 returns a fixed stdout/exit code.
 
-Usage (inside a test) — prefer running the script's main() in-process, via
+Usage (inside a test) -- prefer running the script's main() in-process, via
 `fake.env`, over a real subprocess: coverage instrumentation only sees code
 executed in this interpreter, not in a spawned child:
 

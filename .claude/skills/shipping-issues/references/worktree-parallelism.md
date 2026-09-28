@@ -25,13 +25,13 @@ This file is about whether the *repository* can support it at all, and how.
 
 The long pole in shipping an issue is the implementation run, and those runs
 are independent when the issues are. Three of them in three worktrees finish
-in roughly the time one takes. Everything after that — PR, CI, merge — is
+in roughly the time one takes. Everything after that -- PR, CI, merge -- is
 either serialized by GitHub or serialized on purpose, and stays that way.
 
 So the honest accounting is: parallel mode compresses the implementation wait
 and nothing else. It buys that by paying, per issue, one dependency install
 and one baseline run, plus the risk that two issues collide in ways the
-grouping check missed. Under two issues in a group, that trade is a loss —
+grouping check missed. Under two issues in a group, that trade is a loss --
 which is why single-issue mode never uses a worktree.
 
 A second thing it buys, and the reason not to dismiss it on a small batch:
@@ -52,7 +52,7 @@ keep working in it while a run is in flight.
 **Not** `<repo>/.claude/worktrees/`, which is where Claude Code's own
 `EnterWorktree` puts them. A worktree nested inside the repo shows up as
 `?? .claude/` in the main checkout's `git status` unless that repo happens to
-ignore the path — and this skill reads an unexplained dirty main checkout as
+ignore the path -- and this skill reads an unexplained dirty main checkout as
 someone else's work and stops. Keeping worktrees under `<runstate>` also
 means one rule covers every file the run generates: none of it is ever inside
 the checkout.
@@ -64,30 +64,30 @@ agent changed nothing. Teardown here is `cleanup_run.sh` and nothing else.
 
 ## Viability gate
 
-`worktree_setup.sh` reconstructs what a fresh worktree lacks — it copies the
+`worktree_setup.sh` reconstructs what a fresh worktree lacks -- it copies the
 untracked local config, installs from the lockfile, and runs the project's own
 verification command. Whether that is *enough* for a given repo is not worth
 predicting; it is worth testing, once, cheaply.
 
 Provision the group's **first** worktree and read its `verdict:` line:
 
-- `verdict: READY` → the repo is worktree-viable. Provision the rest.
-- `verdict: BLOCKED` → the worktree could not be created, or the dependency
+- `verdict: READY` -> the repo is worktree-viable. Provision the rest.
+- `verdict: BLOCKED` -> the worktree could not be created, or the dependency
   install failed. Not viable in this run.
-- `verdict: READY_WITH_WARNINGS` with a red baseline → compare against the
+- `verdict: READY_WITH_WARNINGS` with a red baseline -> compare against the
   main checkout. **Red in both** is the repository's own broken state, which
   step 3 already knows how to report; parallel mode is still fine. **Green in
   the main checkout, red in the worktree** usually means something the
   verification needs is not reconstructible from tracked files plus a lockfile
-  — not viable — but read the failure before concluding that, because one
+  -- not viable -- but read the failure before concluding that, because one
   common cause is the worktree *layout* rather than a missing resource. See
   [the gitlink case](#the-gitlink-case-a-red-baseline-that-is-not-a-verdict)
   below: fully explained, deterministic, and safe to run parallel through.
-- `deps: MANUAL(...)` → the script found a dependency manifest it will not
+- `deps: MANUAL(...)` -> the script found a dependency manifest it will not
   guess a command for. Either supply the install command yourself and re-run,
   or treat the repo as not viable.
 
-Not viable → remove that worktree, fall back to serial for the whole run, and
+Not viable -> remove that worktree, fall back to serial for the whole run, and
 say which of these it was in the step 10 report. Do not retry per issue: the
 answer is a property of the repository, not of the issue.
 
@@ -99,42 +99,42 @@ cache the suite treats as required rather than as an optimization.
 
 ### The gitlink case: a red baseline that is not a verdict
 
-**In a linked worktree, `.git` is a file, not a directory** — a gitlink holding
-`gitdir: …/.git/worktrees/<n>`. Any suite that walks the whole tree and skips
+**In a linked worktree, `.git` is a file, not a directory** -- a gitlink holding
+`gitdir: .../.git/worktrees/<n>`. Any suite that walks the whole tree and skips
 version-control internals *by entry type* therefore reads straight into the one
 path its own skip list names. In a repository whose tests inventory placeholder
 strings, scan for secrets, or assert what the tree contains, that shows up as a
-red baseline in every worktree and green in the main checkout — the shape the
+red baseline in every worktree and green in the main checkout -- the shape the
 gate calls "not viable".
 
 It is not the same thing, and treating it as such costs the run its parallelism
 for a cause that is fully understood. Tell them apart by reading the failure:
 
 - **Same single assertion in every worktree, and its message names `.git` or a
-  path that only exists in a worktree** → layout, not a missing resource.
+  path that only exists in a worktree** -> layout, not a missing resource.
   Parallel mode is fine.
-- **Anything else** → the gate's ordinary reading applies. Not viable.
+- **Anything else** -> the gate's ordinary reading applies. Not viable.
 
 When it is the layout, say so and carry the diagnosis forward rather than
 letting three sub-agents each rediscover it:
 
 - Name the exact failing assertion in every step 3 and step 4 prompt for that
   batch, with the cause, and say it is **not theirs to fix and not to be
-  silenced** — no skip-list entry added to quiet it, which would be weakening a
+  silenced** -- no skip-list entry added to quiet it, which would be weakening a
   gate. Require each agent to say in `VERIFY` whether that failure was the
   *only* remaining red, which keeps a red baseline from hiding a real one.
 - Check whether it collides with a pre-commit hook. A repo running related
   tests on commit will refuse every commit the batch tries to make, and the
   escapes (`--no-verify`, disabling hooks) are exactly what a project's own
   rules forbid. When that happens the failure is not merely cosmetic and the
-  issue whose scope covers it should fix it properly — which is the outcome
+  issue whose scope covers it should fix it properly -- which is the outcome
   this run had: the walk's skip was matched by *name* whatever the entry type,
   the baseline went green, and it closed a real hole, since in an ordinary
   checkout that same type gate is what stands between the walk and
   `.git/config`'s possibly credentialed remote URL.
 
 Record the call and its reason under `--event parallel-group --field reason=`,
-and say in the step 10 report that the baseline was red for this reason — a
+and say in the step 10 report that the baseline was red for this reason -- a
 run that merged on a knowingly red baseline has to show its work.
 
 ## What a fresh worktree is missing
@@ -142,24 +142,27 @@ run that merged on a knowingly red baseline has to show its work.
 `git worktree add` checks out **tracked files only**. Everything below is
 absent, and `worktree_setup.sh` handles the first two:
 
-- **Untracked local config** — `.env`, `.env.local`, `*.local`, `.envrc`,
-  `.claude/settings.local.json`. Copied from the main checkout. `.example` /
-  `.sample` / `.template` variants are skipped, and so is anything actually
-  tracked.
-- **Dependencies** — `node_modules`, `vendor/`, `.venv` are all empty.
-  Reinstalled from the lockfile. On macOS the script clones `node_modules`
-  with `cp -Rc` first (APFS clonefile: near-instant, copy-on-write) except
-  under `npm ci`, which wipes the directory anyway.
+- **Untracked local config** -- in this repository `Config/Local.xcconfig` (the
+  gitignored local signing identity `Config/Debug.xcconfig` includes) and
+  `.claude/settings.local.json`; generically also `.env`, `.env.local`,
+  `*.local`, `.envrc`. Copied from the main checkout. `.example` / `.sample` /
+  `.template` variants are skipped, and so is anything actually tracked.
+- **Dependencies** -- this template has no lockfile install step: SwiftPM
+  resolves `Packages/MyAppKit` on the first `just check` into the worktree's own
+  `Packages/MyAppKit/.build/`. For a repository that does have one,
+  `node_modules`, `vendor/`, `.venv` are all empty and reinstalled from the
+  lockfile; on macOS the script clones `node_modules` with `cp -Rc` first (APFS
+  clonefile) except under `npm ci`, which wipes the directory anyway.
 - **A virtualenv can never be copied.** `pyvenv.cfg` and the `bin/` shims
   hold absolute paths; a copied `.venv` is a broken one that fails in
   confusing ways. It is always re-created by the tool.
-- **`.git` is a file, not a directory** in a linked worktree — it is a gitlink
+- **`.git` is a file, not a directory** in a linked worktree -- it is a gitlink
   pointing into the main `.git/worktrees/<name>`. Any tool that assumes a
   `.git/` directory can misbehave; hook installers (husky, lefthook) are the
   common ones, and hooks themselves are shared repo-wide rather than
   per-worktree.
-- **Build and type-check caches** (`.next`, `dist`, `__pycache__`, anything
-  keyed by absolute path) start cold. First run in each worktree is slower.
+- **Build caches** (`Packages/MyAppKit/.build/`, `build/`, the generated
+  `MyApp.xcodeproj`, anything keyed by absolute path) start cold. First run in each worktree is slower.
 
 ## Failure modes that look like the issue's fault
 
@@ -169,19 +172,19 @@ absent, and `worktree_setup.sh` handles the first two:
   why a repo whose verification binds fixed ports is not parallel-safe. The
   symptom to watch for: two or more concurrent runs report `VERIFY` failures
   that do not reproduce when the same command is re-run alone. That is the
-  repo telling you it is not parallel-safe — finish the batch serially and
+  repo telling you it is not parallel-safe -- finish the batch serially and
   record it.
 - **One shared local database or fixture directory.** Same shape as ports:
   the failures land on whichever run lost the race, and look like flakes.
 - **A branch cannot be checked out twice.** git refuses to add a worktree for
   a branch already checked out elsewhere. The `<type>/<n>-<slug>` naming makes
   this collision-free across issues, so hitting it means a stale worktree
-  survived an earlier run — a [stop condition](../SKILL.md#stop-conditions),
+  survived an earlier run -- a [stop condition](../SKILL.md#stop-conditions),
   not something to force past.
 - **Shared refs and object store.** Worktrees have their own index and working
   directory but one `.git`. Ordinary concurrent edits and commits are safe;
   what is not safe is running `git gc`/`prune` from one while another writes.
-  Nothing in this skill does that — do not add it.
+  Nothing in this skill does that -- do not add it.
 - **`gh` shares one token and one rate limit.** Parallel implementation runs
   do not touch the GitHub API at all (the implementation template forbids it),
   which is what keeps this from mattering. It starts mattering the moment
@@ -191,7 +194,7 @@ absent, and `worktree_setup.sh` handles the first two:
 
 All of it goes through `cleanup_run.sh --worktree-root <runstate>/worktrees`,
 in one batch at step 9, after the last merge. Never `git worktree remove` or
-`rm` ad hoc — raw `rm` trips a permission prompt and stalls the run, and the
+`rm` ad hoc -- raw `rm` trips a permission prompt and stalls the run, and the
 single entry point is what lets deletion be gated on merge status.
 
 Two facts that decide how to call it:
@@ -205,7 +208,7 @@ Two facts that decide how to call it:
 - **The default removes every worktree under the root**, including one another
   session is mid-run in. That is correct at the end of a run this skill owns
   end to end. It is wrong when other sessions may be working in the same repo,
-  and wrong when cleaning up outside a run just to reclaim disk — pass
+  and wrong when cleaning up outside a run just to reclaim disk -- pass
   `--merged-only` there, which keeps any worktree whose branch has no merged
   PR. A dirty worktree is skipped and listed either way; `--force` overrides
   that, and only after salvaging what matters.

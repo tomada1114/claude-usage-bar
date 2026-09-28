@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""run_record.py — Append one event to the shipping-issues run record.
+"""run_record.py -- Append one event to the shipping-issues run record.
 
 The run record is a plain, append-only log of what a run actually did:
 selection, labels written, PRs opened, review passes, CI verdicts, merges,
 filed follow-ups, cleanup. Nothing here is ever rewritten or deleted, so a run
-stopped mid-way keeps whatever landed before it stopped — the whole point of
+stopped mid-way keeps whatever landed before it stopped -- the whole point of
 calling this once per event, right after the event happens, instead of
 composing the record from memory at the end.
 
@@ -24,7 +24,7 @@ explicitly whenever cwd may not be the repo being shipped.
 
 --field k=v may repeat; each becomes "k=v" on the appended line, in the order
 given. --body-file appends its contents as a fenced block under the event
-line — the shape selection uses for the rubric's evidence block.
+line -- the shape selection uses for the rubric's evidence block.
 
 `run-start` additionally opens a `## run <UTC timestamp>` heading before its
 line, so a run.md reads as a sequence of runs rather than one long list.
@@ -111,7 +111,7 @@ def format_entry(event: str, fields: list[tuple[str, str]], body: str | None,
     stamp = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     line = f"- {stamp} {event}"
     if fields:
-        line += " — " + " ".join(f"{k}={v}" for k, v in fields)
+        line += " -- " + " ".join(f"{k}={v}" for k, v in fields)
     line += "\n"
     if body is not None:
         fence = _fence_for(body)
@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
     repo = resolve_repo(args.repo)
     if not repo:
         target = args.repo or "the current directory"
-        print(f"error: cannot resolve {target} — run inside the repo or pass "
+        print(f"error: cannot resolve {target} -- run inside the repo or pass "
               "--repo OWNER/NAME", file=sys.stderr)
         return 1
     if not REPO_RE.match(repo):

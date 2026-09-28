@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""plan.py — The whole startup of a shipping-issues run, in one call.
+"""plan.py -- The whole startup of a shipping-issues run, in one call.
 
 Steps 0 through 2c of SKILL.md used to cost eight or more tool calls before a
 line of code was written: preflight, a `--select`, a `--rank-only`, two or three
@@ -11,12 +11,12 @@ that is constant for the repository.
 This script answers all of it once and prints a single block: where the repo
 stands, what the backlog ranks to, which issues can be worked in parallel, and
 the exact next command. It makes exactly one `gh` fetch pair (and none at all on
-a warm digest cache), and it never puts issue prose in the caller's context —
+a warm digest cache), and it never puts issue prose in the caller's context --
 `issue_digest.py --detail-top` is the separate, deliberate call for that.
 
 What it does NOT do is decide anything it cannot decide mechanically. The
-grouping line says which of three states it is in — MECHANICAL, PARTIAL or
-SERIAL — and PARTIAL means some candidate issue declares no `touches=`, so the
+grouping line says which of three states it is in -- MECHANICAL, PARTIAL or
+SERIAL -- and PARTIAL means some candidate issue declares no `touches=`, so the
 proposed batch is a starting point for the caller's own judgement rather than an
 answer. That degrades in the right direction: the more issues carry a ship
 contract, the less there is left to judge.
@@ -50,7 +50,7 @@ DEFAULT_MAX_PARALLEL = 3
 
 # Branch-name prefix by what the issue evidently is. Read from the title's
 # conventional-commit prefix first, then its labels, so a repo that writes
-# `fix(test): …` titles gets `fix/…` branches without being asked.
+# `fix(test): ...` titles gets `fix/...` branches without being asked.
 TYPE_FROM_LABEL = {
     "bug": "fix", "defect": "fix", "regression": "fix",
     "enhancement": "feat", "feature": "feat",
@@ -154,7 +154,7 @@ def paths_collide(a: list[str], b: list[str]) -> bool:
     """Two issues collide when their declared paths overlap.
 
     `*` is an author saying "I do not know what this touches", which must read
-    as "assume everything" — an unknown that defaults to *no* collision would
+    as "assume everything" -- an unknown that defaults to *no* collision would
     silently put two conflicting issues in one batch, which is the expensive
     direction to be wrong in.
     """
@@ -176,7 +176,7 @@ def group_batches(
 
     Returns (batches, confidence, undeclared) where confidence is MECHANICAL
     when every issue in the leading batch declared its paths, and PARTIAL when
-    at least one did not — in which case the batch is a proposal and the caller
+    at least one did not -- in which case the batch is a proposal and the caller
     still owes it a look.
     """
     batches: list[list[dict[str, Any]]] = []
@@ -191,7 +191,7 @@ def group_batches(
             conflict = (
                 len(batch) >= max_parallel
                 # An issue that waits on, or is waited on by, something already
-                # in the batch has to follow it — that ordering is the whole
+                # in the batch has to follow it -- that ordering is the whole
                 # reason dependency edges are read at all.
                 or depends & in_batch
                 or unblocks & in_batch
@@ -264,8 +264,8 @@ def main() -> int:
     if rc2 == 0:
         pre = parse_kv(out2)
 
-    # Everything below reads preflight by key name. A key that is missing —
-    # preflight renamed it, or failed halfway and still exited 0 — used to
+    # Everything below reads preflight by key name. A key that is missing --
+    # preflight renamed it, or failed halfway and still exited 0 -- used to
     # degrade silently: `verify_command` defaulting to NONE meant the batch was
     # provisioned with no baseline at all and nothing said so, which quietly
     # removes the check that catches a broken repo before three implementation
@@ -292,7 +292,7 @@ def main() -> int:
     leftovers = existing_worktrees(runstate)
     if leftovers and not args.allow_existing_worktrees:
         print("# shipping-issues plan")
-        print(f"repo: {pre.get('repo_slug', '?')} · runstate: {runstate}")
+        print(f"repo: {pre.get('repo_slug', '?')} | runstate: {runstate}")
         print("existing-worktrees: " + ", ".join(leftovers))
         print("These are under this run's own root and this run did not create "
               "them. Confirm nothing is running in them, then either remove "
@@ -370,7 +370,7 @@ def main() -> int:
         next_cmd = (f"git switch {pre.get('default_branch', 'main')} && "
                     f"git pull --ff-only && git switch -c {branches[n]}")
     else:
-        next_cmd = "nothing to ship — see held:/needs-design: above"
+        next_cmd = "nothing to ship -- see held:/needs-design: above"
 
     payload = {
         "preflight": pre,
@@ -427,10 +427,10 @@ def main() -> int:
 
     ccov = digest["contract_coverage"]
     print("# shipping-issues plan")
-    print(f"repo: {pre.get('repo_slug', '?')} · default: "
-          f"{pre.get('default_branch', '?')} · runstate: {runstate or '?'}")
-    print(f"preflight: {pre.get('verdict', '?')} · tree: "
-          f"{pre.get('working_tree', '?')} · worktrees: "
+    print(f"repo: {pre.get('repo_slug', '?')} | default: "
+          f"{pre.get('default_branch', '?')} | runstate: {runstate or '?'}")
+    print(f"preflight: {pre.get('verdict', '?')} | tree: "
+          f"{pre.get('working_tree', '?')} | worktrees: "
           f"{pre.get('existing_worktrees', 'none')}")
     print(f"profile: pkg={pre.get('pkg_manager', '?')} "
           f"verify={pre.get('verify_command', '?')!r} "
@@ -444,29 +444,29 @@ def main() -> int:
     # test`, or that the chosen script starts a watcher and will never exit.
     verify = pre["verify_command"]
     if verify == "NONE":
-        print("verify-check: NONE found — decide the baseline command yourself, "
+        print("verify-check: NONE found -- decide the baseline command yourself, "
               "or run without one and say so in the report")
     else:
         print(f"verify-check: {verify!r} (from {pre.get('verify_source', '?')}) "
-              "— confirm it is this repo's real gate and that it terminates")
+              "-- confirm it is this repo's real gate and that it terminates")
     print()
-    print(f"backlog: {digest['open_issue_count']} open · "
-          f"{digest['open_pr_count']} open PRs · digest-cache {digest.get('cache')}")
+    print(f"backlog: {digest['open_issue_count']} open | "
+          f"{digest['open_pr_count']} open PRs | digest-cache {digest.get('cache')}")
     cov = digest["label_coverage"]
     print(f"labels: {cov['labeled']}/{cov['total']}"
-          + (f" · contract-ranked {cov['contract_ranked']}"
+          + (f" | contract-ranked {cov['contract_ranked']}"
              if cov["contract_ranked"] else "")
           + (" COMPLETE" if cov["complete"] else
-             " — no tier: " + ",".join(f"#{n}" for n in cov["unranked"][:10])))
+             " -- no tier: " + ",".join(f"#{n}" for n in cov["unranked"][:10])))
     if ccov["missing"] or ccov["incomplete"]:
-        print(f"contract: {ccov['full']}/{ccov['total']} complete — "
+        print(f"contract: {ccov['full']}/{ccov['total']} complete -- "
               f"{len(ccov['missing'])} missing, {ccov['partial']} partial "
               "(issue_digest.py --audit for the list)")
     print()
-    print(f"mode: {args.mode} · plan: {plan_mode} · grouping: {confidence}"
-          + (f" · max-parallel {args.max_parallel}" if plan_mode == "parallel" else ""))
+    print(f"mode: {args.mode} | plan: {plan_mode} | grouping: {confidence}"
+          + (f" | max-parallel {args.max_parallel}" if plan_mode == "parallel" else ""))
     if plan_mode == "parallel":
-        print("  ⚠ the batch below is a PROPOSAL, not a decision — confirm it "
+        print("  NOTE: the batch below is a PROPOSAL, not a decision -- confirm it "
               "before provisioning (step 2c)")
         if confidence == "PARTIAL":
             print("    no touches= on " + ",".join(f"#{n}" for n in undeclared)
@@ -484,20 +484,20 @@ def main() -> int:
     if lead:
         top = lead[0]
         print(f"select: #{top['number']} [{top['effective_tier']}] {top['title']} "
-              f"(score {top['score']} · {' · '.join(top['reasons']) or '—'})")
-        print("branch: " + " ".join(f"#{n}→{b}" for n, b in branches.items()))
+              f"(score {top['score']} | {' | '.join(top['reasons']) or '--'})")
+        print("branch: " + " ".join(f"#{n}->{b}" for n, b in branches.items()))
     else:
-        print("select: none — no READY issue matches the filter")
+        print("select: none -- no READY issue matches the filter")
     if digest["needs_design"]:
         print("needs-design: "
               + ",".join(f"#{n}" for n in digest["needs_design"])
-              + " → step 8b background agents (spawn now, do not wait)")
+              + " -> step 8b background agents (spawn now, do not wait)")
     if stale_dependency_by_number:
         stale_numbers = sorted(stale_dependency_by_number)
         label_spelling = stale_dependency_by_number[stale_numbers[0]][0]
         print("stale-labels: "
               + ",".join(f"#{n}" for n in stale_numbers)
-              + f" → {label_spelling} with every dependency closed; clear with "
+              + f" -> {label_spelling} with every dependency closed; clear with "
               + "apply_priority_labels.py "
               + " ".join(f"--clear-dependency {n}" for n in stale_numbers))
     held = [r for r in ranking

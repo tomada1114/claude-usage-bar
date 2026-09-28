@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
-# worktree_setup.sh — Turn a bare `git worktree` into a working build
+# worktree_setup.sh -- Turn a bare `git worktree` into a working build
 # environment, and report whether the project's own verification command is
-# already green there — BEFORE any implementation agent is spawned.
+# already green there -- BEFORE any implementation agent is spawned.
 #
-# A fresh `git worktree add` gives tracked files only: no .env, no
-# node_modules, no .venv, so the project's verification command fails before
-# it reads a line of code. This script copies the untracked local config the
+# A fresh `git worktree add` gives tracked files only: no Config/Local.xcconfig,
+# no .env, no node_modules, no .venv, so the project's verification command can
+# fail -- or build differently -- before it reads a line of code. This script copies the untracked local config the
 # worktree is missing, installs dependencies, and (with --verify) runs the
 # project's verification command once as a baseline. A red baseline is the
-# repository's problem, not the issue's — finding it here costs one command
+# repository's problem, not the issue's -- finding it here costs one command
 # instead of a wasted implementation run, so a red baseline is reported as a
-# warning, never a script failure — see "This script REPORTS" below.
+# warning, never a script failure -- see "This script REPORTS" below.
 #
 # Usage: worktree_setup.sh --issue <n> --branch <branch> --base <base-ref>
 #                          --root <worktrees-root>
@@ -21,7 +21,7 @@
 #                          [--verify "<command>"] [--log-dir <dir>]
 #                          [--verify-timeout <seconds>] [--dry-run]
 #
-# --spec provisions several worktrees in ONE invocation, SEQUENTIALLY — never
+# --spec provisions several worktrees in ONE invocation, SEQUENTIALLY -- never
 # in parallel. Two reasons: the dependency installs all contend for the same
 # package-manager cache (pnpm store, pip/uv cache, ...), so running them
 # concurrently just serializes on filesystem locks anyway but with none of the
@@ -30,9 +30,9 @@
 # two worktrees racing each other, which is worse than a slower, honest run.
 #
 # This script REPORTS; it does not decide. A red baseline in a fresh worktree
-# usually means the repo is not worktree-viable right now — a fresh worktree
+# usually means the repo is not worktree-viable right now -- a fresh worktree
 # holds tracked files and nothing else: no .env beyond what got copied, no
-# pre-warmed cache, no locally-running service it depends on — but "usually" is
+# pre-warmed cache, no locally-running service it depends on -- but "usually" is
 # not "always", and telling the two apart needs the diff, the log, and the
 # repo's own conventions in view. So the baseline is a warning here and the
 # caller decides what it means, including whether to tear the worktree down.
@@ -48,7 +48,7 @@
 #   * The worktree, and every file this script writes (copied local config,
 #     the baseline log), live OUTSIDE the repo's main checkout, under the
 #     caller-supplied --root. This script never creates or modifies
-#     anything inside the repo checkout — the skill treats an unexpectedly
+#     anything inside the repo checkout -- the skill treats an unexpectedly
 #     dirty main checkout as a hard stop condition. This guard is enforced
 #     per-spec in batch mode, not just for the first one.
 #
@@ -123,7 +123,7 @@ usage() {
   echo "   or: worktree_setup.sh --spec <issue>:<branch> [--spec ...] --base <base-ref> --root <worktrees-root> [--verify \"<command>\"] [--log-dir <dir>] [--verify-timeout <seconds>] [--dry-run]" >&2
 }
 
-# print_help — the script's own usage, derived straight from this header
+# print_help -- the script's own usage, derived straight from this header
 # comment so the text lives in exactly one place (kept separate from usage()
 # above, which is the short one-liner already used on stderr for arg errors).
 print_help() {
@@ -210,7 +210,7 @@ is_registered_worktree() {
 # --- dependency-manager detection ---------------------------------------
 # This is purely a function of repo_root's file listing, so (unlike the
 # per-worktree steps below) it's computed once, not once per spec. Kept in
-# sync by hand with preflight.sh's pkg_manager/lockfile precedence — see the
+# sync by hand with preflight.sh's pkg_manager/lockfile precedence -- see the
 # comment there.
 deps_kind="none"
 deps_is_npm_ci=0
@@ -248,7 +248,7 @@ clone_node_modules() {
 }
 
 # Runs "$@" with cwd = the worktree. On a non-zero exit (including "command
-# not found", which exits 127) this reports the failure and returns 1 — it
+# not found", which exits 127) this reports the failure and returns 1 -- it
 # never calls exit itself, so a batch run can move on to the next spec.
 run_install_cmd() {
   local logf rc out
@@ -307,7 +307,7 @@ do_install_yarn() {
 }
 
 # --- provision_one: everything that used to be this whole script's tail,
-# now per-spec. Never calls `exit` — every failure path `return`s 1 so a
+# now per-spec. Never calls `exit` -- every failure path `return`s 1 so a
 # batch run can continue with the remaining specs; the single-issue driver
 # below turns that return code straight into the process exit code, which
 # preserves the original (pre-batch) single-issue behavior exactly.
@@ -375,7 +375,11 @@ provision_one() {
   fi
 
   # --- 4. copy the untracked local config the worktree is missing --------
-  local config_patterns=(".env" ".env.*" "*.local" ".envrc" ".dev.vars" ".claude/settings.local.json" "local.settings.json")
+  # Config/Local.xcconfig is this template's local signing identity: gitignored,
+  # `#include?`d by Config/Debug.xcconfig, and without it a worktree's build
+  # signs differently from the main checkout's (AGENTS.md, "Security and human
+  # approval"). The other patterns cover repositories with another toolchain.
+  local config_patterns=("Config/Local.xcconfig" ".env" ".env.*" "*.local" ".envrc" ".dev.vars" ".claude/settings.local.json" "local.settings.json")
   local copied_any=0 pat candidate rel dest
   for pat in "${config_patterns[@]}"; do
     # shellcheck disable=SC2231 # $pat is a glob on purpose: quoting it would stop the expansion
@@ -465,7 +469,7 @@ provision_one() {
       mkdir -p "$log_dir"
       # Bounded, always. The verify command is whatever the caller passed, and
       # a repo whose "check" script starts a watcher or a dev server would
-      # otherwise hang this script forever — with no output, since everything is
+      # otherwise hang this script forever -- with no output, since everything is
       # redirected to the log. A timeout is not a judgement call about the
       # command, so it belongs here rather than with the caller; `timeout` is
       # missing on a stock macOS, hence the fallback.
@@ -474,7 +478,7 @@ provision_one() {
       # the shell and leave its children running) are both worse than using the
       # interpreter this skill already requires. start_new_session puts the
       # command in its own process group so the whole tree dies, not just the
-      # `bash -c` wrapper — a test runner that forked workers would otherwise
+      # `bash -c` wrapper -- a test runner that forked workers would otherwise
       # survive the kill and keep holding the port it bound.
       run_verify_bounded "$worktree_path" "$p_verify" "$VERIFY_TIMEOUT" >"$log_path" 2>&1
       verify_rc=$?

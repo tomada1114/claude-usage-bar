@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# preflight.sh — Verify the local repo is in a state where issues can be shipped,
+# preflight.sh -- Verify the local repo is in a state where issues can be shipped,
 # and report the repo's profile so the calling model doesn't have to re-derive it
 # with ad-hoc probes on every run.
 #
@@ -11,7 +11,7 @@
 #
 # By default this checks only the local git state plus cheap, local repo-profile
 # facts (package manager, verify command, hooks). It makes no GitHub or network
-# calls at all — that is a deliberate property of this script, so --with-github
+# calls at all -- that is a deliberate property of this script, so --with-github
 # is how a caller opts into the (slower, network-dependent) GitHub checks. Later
 # steps that actually need GitHub still surface a problem on their own if the
 # caller skips --with-github.
@@ -22,7 +22,7 @@
 # Makefile, justfile, pyproject.toml) haven't changed, so a matching lockfile
 # hash + config hash is treated as a cache hit. worktree_viable is never
 # detected here (git-worktree viability requires actually running a baseline
-# verify command, which is worktree_setup.sh's job, not preflight's) — it is
+# verify command, which is worktree_setup.sh's job, not preflight's) -- it is
 # only ever set via --set-worktree-viable, once the caller has paid for that
 # probe, so future preflight calls can read it back for free.
 #
@@ -40,7 +40,7 @@ emit() { printf '%s: %s\n' "$1" "$2"; }
 
 # --- hashing helper ----------------------------------------------------------
 # Prefer shasum (macOS default), fall back to sha256sum (Linux default). If
-# neither exists, HASHER stays empty and every hash_* call reports "" — callers
+# neither exists, HASHER stays empty and every hash_* call reports "" -- callers
 # turn that into the documented "none" value rather than failing the script.
 HASHER=""
 if command -v shasum >/dev/null 2>&1; then
@@ -68,7 +68,7 @@ usage() {
   echo "Usage: preflight.sh [--with-github] [--profile-cache <path>] [--set-worktree-viable <yes|no>]" >&2
 }
 
-# print_help — the script's own usage, derived straight from this header
+# print_help -- the script's own usage, derived straight from this header
 # comment so the text lives in exactly one place (kept separate from usage()
 # above, which is the short one-liner already used on stderr for arg errors).
 print_help() {
@@ -137,7 +137,7 @@ git_common_dir="$(git rev-parse --path-format=absolute --git-common-dir)"
 emit git_common_dir "$git_common_dir"
 
 # --- worktree state ----------------------------------------------------------
-# Neither of these is a blocker or a warning on its own — they only inform the
+# Neither of these is a blocker or a warning on its own -- they only inform the
 # caller whether parallel-worktree mode is already in play.
 git_dir=$(git rev-parse --path-format=absolute --git-dir)
 if [[ "$git_dir" != "$git_common_dir" ]]; then
@@ -176,7 +176,7 @@ fi
 
 # --- repo profile: always emitted, cheap, local ------------------------------
 
-# repo_slug — parsed from the origin URL. Handles the two common forms:
+# repo_slug -- parsed from the origin URL. Handles the two common forms:
 #   git@github.com:owner/repo.git
 #   https://github.com/owner/repo(.git)
 # and the less common ssh://git@host/owner/repo.git. Anything that doesn't
@@ -195,10 +195,10 @@ if [[ -n "$origin_url" ]]; then
 fi
 emit repo_slug "$repo_slug"
 
-# default_branch — origin/HEAD is only set by `git clone`, not by `git remote
+# default_branch -- origin/HEAD is only set by `git clone`, not by `git remote
 # add` + fetch, so plenty of real repos lack it (see cleanup_run.sh for the
 # same gap). Fall back to origin/main, then origin/master, then whatever
-# branch we're actually on — this must never fail preflight.
+# branch we're actually on -- this must never fail preflight.
 default_branch="$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||')"
 if [[ -z "$default_branch" ]]; then
   if git show-ref --verify --quiet refs/remotes/origin/main; then
@@ -211,7 +211,7 @@ if [[ -z "$default_branch" ]]; then
 fi
 emit default_branch "$default_branch"
 
-# runstate — where a caller may persist per-repo state (e.g. the profile
+# runstate -- where a caller may persist per-repo state (e.g. the profile
 # cache) across runs. Only the path is reported; the directory is deliberately
 # NOT created here, since not every caller needs it.
 if [[ "$repo_slug" == "UNKNOWN" ]]; then
@@ -223,9 +223,9 @@ state_root="${AGENT_SKILL_STATE_DIR:-$HOME/.local/state/agent-skills}"
 runstate="$state_root/shipping-issues/$runstate_leaf"
 emit runstate "$runstate"
 
-# pkg_manager / lockfile — this precedence is duplicated in worktree_setup.sh's
+# pkg_manager / lockfile -- this precedence is duplicated in worktree_setup.sh's
 # "install dependencies" section. It is intentionally the SAME order in both
-# places (see the comment there) — this file can't factor it into a shared
+# places (see the comment there) -- this file can't factor it into a shared
 # helper without touching a third file outside this track's ownership, so if
 # you change one, change the other.
 pkg_manager="none"
@@ -253,7 +253,7 @@ if [[ "$lockfile" != "none" ]]; then
 fi
 emit lockfile_hash "$lockfile_hash"
 
-# hooks — checked in this order: an explicit lefthook config always wins (even
+# hooks -- checked in this order: an explicit lefthook config always wins (even
 # over a native hook that also happens to be installed), then husky, then
 # pre-commit, then "some other native hook is installed", then none.
 hooks="none"
@@ -268,18 +268,35 @@ elif [[ -f "$repo_root/.pre-commit-config.yaml" ]]; then
 elif [[ -d "$git_common_dir/hooks" ]] && find "$git_common_dir/hooks" -maxdepth 1 -type f ! -name '*.sample' 2>/dev/null | grep -q .; then
   hooks="native"
 fi
-# Not emitted here — emitted once below, after the profile-cache block has had
+# Not emitted here -- emitted once below, after the profile-cache block has had
 # a chance to override it on a cache hit.
 
-# verify_command — first match wins, in this order: package.json scripts,
-# Makefile target, justfile recipe, then a per-language default. Independent
-# of pkg_manager/lockfile detection above: a repo can have a Makefile target
-# that wraps a completely different toolchain than its lockfile suggests, so
-# this chain is checked fresh rather than branching on pkg_manager.
+# verify_command -- first match wins, in this order: justfile recipe,
+# package.json scripts, Makefile target, then a per-language default. The
+# justfile comes first because it is this template's own gate: `just check` runs
+# format, lint, the script and harness checks, the tests with the coverage
+# floor, and the build, and a repository cut from the template that later adds
+# a package.json for some tooling must not have its baseline silently demoted to
+# that file's `test` script. The later entries stay so the script still gives a
+# useful answer in a repository with another toolchain. Independent of
+# pkg_manager/lockfile detection above: a justfile or Makefile can wrap a
+# completely different toolchain than a lockfile suggests, so this chain is
+# checked fresh rather than branching on pkg_manager.
 VERIFY_COMMAND=""
 VERIFY_SOURCE=""
 
-if [[ -f "$repo_root/package.json" ]]; then
+for jfile in "$repo_root/justfile" "$repo_root/.justfile"; do
+  [[ -f "$jfile" ]] || continue
+  for recipe in verify check test; do
+    if grep -qE "^${recipe}([[:space:]].*)?:" "$jfile"; then
+      VERIFY_COMMAND="just $recipe"
+      VERIFY_SOURCE="justfile:$recipe"
+      break 2
+    fi
+  done
+done
+
+if [[ -z "$VERIFY_COMMAND" && -f "$repo_root/package.json" ]]; then
   # Parsed with python3 (a documented requirement of this skill) rather than
   # grep/sed, since scripts.* values are arbitrary JSON strings.
   found_script="$(python3 - "$repo_root/package.json" <<'PY'
@@ -295,13 +312,13 @@ except Exception:
 
 scripts = data.get("scripts") if isinstance(data, dict) else None
 if isinstance(scripts, dict):
-    # Namespaced forms are in this list because a repo that keeps `test` as
-    # "just the unit tests" and puts the real pre-PR gate behind `check:quick`
-    # is common, and picking `test` there gives a baseline that passes while
-    # lint and typecheck are broken — which is exactly the CI round-trip the
-    # baseline exists to avoid. `check:quick` outranks `check:all` on purpose:
-    # a baseline wants the cheapest command that still covers every kind of
-    # failure, and the PR's own CI run covers the expensive rest.
+    # The same principle as `just check` over `just test`: a repo that keeps
+    # `test` as "just the unit tests" and puts the real pre-PR gate behind a
+    # `check`-style script would otherwise get a baseline that passes while
+    # lint is broken -- exactly the CI round-trip the baseline exists to
+    # avoid. `check:quick` outranks `check:all` on purpose: a baseline wants the
+    # cheapest command that still covers every kind of failure, and the PR's
+    # own CI run covers the expensive rest.
     for key in ("verify", "check", "check:quick", "check:all", "verify:all",
                 "ci", "test"):
         if scripts.get(key):
@@ -336,19 +353,6 @@ if [[ -z "$VERIFY_COMMAND" ]]; then
 fi
 
 if [[ -z "$VERIFY_COMMAND" ]]; then
-  for jfile in "$repo_root/justfile" "$repo_root/.justfile"; do
-    [[ -f "$jfile" ]] || continue
-    for recipe in verify check test; do
-      if grep -qE "^${recipe}([[:space:]].*)?:" "$jfile"; then
-        VERIFY_COMMAND="just $recipe"
-        VERIFY_SOURCE="justfile:$recipe"
-        break 2
-      fi
-    done
-  done
-fi
-
-if [[ -z "$VERIFY_COMMAND" ]]; then
   if [[ -f "$repo_root/uv.lock" ]]; then
     VERIFY_COMMAND="uv run pytest"; VERIFY_SOURCE="uv.lock"
   elif [[ -f "$repo_root/poetry.lock" ]]; then
@@ -373,8 +377,8 @@ VERIFY_SOURCE="${VERIFY_SOURCE:-none}"
 
 # --- profile cache (only touched with --profile-cache) -----------------------
 # `unknown` only until an existing cache is read. worktree_viable deliberately
-# SURVIVES a cache miss: it is a property of the repository and its tooling —
-# whether a fresh worktree can run the gate at all — not of the lockfile or the
+# SURVIVES a cache miss: it is a property of the repository and its tooling --
+# whether a fresh worktree can run the gate at all -- not of the lockfile or the
 # package.json that invalidated the rest of the profile. Resetting it on every
 # lockfile bump would throw away the one fact that cost a whole worktree install
 # to learn, and the caller reads a fresh baseline before trusting a stale `yes`.
@@ -394,10 +398,10 @@ if [[ -n "$PROFILE_CACHE" ]]; then
   # The repo's own files are only half of what the answer depends on: the
   # other half is this script's detection rules. Changing the verify_command
   # search order without bumping this leaves every existing cache serving the
-  # answer the old rules gave — a stale verify_command is a weaker baseline
+  # answer the old rules gave -- a stale verify_command is a weaker baseline
   # gate that nothing else in the run would notice. Bump on ANY change to how
   # verify_command, verify_source, hooks or pkg_manager are derived.
-  profile_logic_version="2"
+  profile_logic_version="3"
 
   cache_hit=0
   if [[ -f "$PROFILE_CACHE" ]]; then

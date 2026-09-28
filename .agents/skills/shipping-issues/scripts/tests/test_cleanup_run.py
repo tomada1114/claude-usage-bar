@@ -273,7 +273,7 @@ class CleanupRunTest(unittest.TestCase):
             )
             worktrees_after_force = git(repo, "worktree", "list").stdout
 
-        self.assertIn(f"SKIPPED (dirty — salvage, then rerun with --force): {wt}\n", proc.stdout)
+        self.assertIn(f"SKIPPED (dirty -- salvage, then rerun with --force): {wt}\n", proc.stdout)
         self.assertIn(str(wt), worktrees_after_default)
 
         self.assertEqual(proc2.returncode, 0, proc2.stderr)
@@ -351,7 +351,7 @@ class CleanupRunTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertIn("deleted local branch: feat/1-merged\n", proc.stdout)
         self.assertNotIn("feat/1-merged", branches)
-        # #2 is just as merged, but it was never named — --branch means this
+        # #2 is just as merged, but it was never named -- --branch means this
         # run's own branches only.
         self.assertIn("feat/2-merged", branches)
 
@@ -411,7 +411,7 @@ class CleanupRunTest(unittest.TestCase):
             branches = git(repo, "branch", "--format=%(refname:short)").stdout.splitlines()
 
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        # Named explicitly, but it carries no merged PR — with --branch it
+        # Named explicitly, but it carries no merged PR -- with --branch it
         # must clear the same guard as everything else, not the automatic
         # unconditional deletion the unscoped pass gives worktree-agent-*.
         self.assertIn("worktree-agent-one", branches)
@@ -487,7 +487,7 @@ class CleanupRunTest(unittest.TestCase):
             )
 
         self.assertEqual(proc.returncode, 0, proc.stderr)
-        # The local pass still deletes its own (real, merged) local branch —
+        # The local pass still deletes its own (real, merged) local branch --
         # only the remote pass's enumeration is under test here: it must never
         # claim a deletion for a ref ls-remote no longer reports.
         self.assertNotIn("push origin --delete feat/gone", proc.stdout)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# land_pr.sh — Merge a green PR using the repo's preferred method, then verify
+# land_pr.sh -- Merge a green PR using the repo's preferred method, then verify
 # that the issue it was supposed to close actually closed.
 #
 # Usage: land_pr.sh <pr-number> [--issue N] [--method squash|merge|rebase]
@@ -15,10 +15,10 @@
 #     "Closes #N" keyword gets one instead of merging and orphaning the issue;
 #   * after merging, it confirms the issue really is CLOSED, and closes it with
 #     a back-reference comment if GitHub did not (squash merges into a
-#     non-default base, keyword lost in a body edit, …).
+#     non-default base, keyword lost in a body edit, ...).
 #
-# A draft PR cannot be merged at all — GitHub refuses with "Pull Request is
-# still a draft" — so by default the script marks it ready for review (`gh pr
+# A draft PR cannot be merged at all -- GitHub refuses with "Pull Request is
+# still a draft" -- so by default the script marks it ready for review (`gh pr
 # ready`) right before merging. Pass --no-ready to report `result: DRAFT`
 # instead of ready-ing it (the caller decides when a PR should stay draft).
 #
@@ -31,7 +31,7 @@ indent() { sed 's/^/  /'; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# print_help — the script's own usage, derived straight from this header
+# print_help -- the script's own usage, derived straight from this header
 # comment so the text lives in exactly one place. Must run BEFORE the
 # positional PR argument below is consumed, or `land_pr.sh --help` sets
 # PR="--help" and forwards it straight to `gh` instead of showing this.
@@ -98,7 +98,7 @@ if [[ -n "$ISSUE" && $LINK_CHECK -eq 1 && "$state" == "OPEN" ]]; then
     exit 1
   elif [[ $link_rc -ne 0 ]]; then
     echo "result: NOT_LINKED"
-    echo "detail: merging now would leave issue #$ISSUE open — fix the link (or pass --no-link-check) and retry"
+    echo "detail: merging now would leave issue #$ISSUE open -- fix the link (or pass --no-link-check) and retry"
     exit 1
   fi
 fi
@@ -113,13 +113,13 @@ if [[ "$state" == "OPEN" ]]; then
       :  # report only; a dry run never mutates the PR
     elif [[ $READY -eq 0 ]]; then
       echo "result: DRAFT"
-      echo "detail: PR #$PR is a draft — mark it ready (gh pr ready $PR) and retry, or omit --no-ready"
+      echo "detail: PR #$PR is a draft -- mark it ready (gh pr ready $PR) and retry, or omit --no-ready"
       exit 1
     elif gh pr ready "$PR" >/dev/null 2>&1; then
       echo "draft: MARKED_READY"
     else
       echo "result: DRAFT"
-      echo "detail: gh pr ready $PR failed — mark it ready by hand and retry"
+      echo "detail: gh pr ready $PR failed -- mark it ready by hand and retry"
       exit 1
     fi
   fi
@@ -144,7 +144,7 @@ if [[ "$state" == "OPEN" ]]; then
 fi
 
 # --- 2. merge ---------------------------------------------------------------
-# confirm_issue <result-label> — post-merge, make sure the issue really closed.
+# confirm_issue <result-label> -- post-merge, make sure the issue really closed.
 confirm_issue() {
   [[ -z "$ISSUE" ]] && return 0
   local st
@@ -154,7 +154,7 @@ confirm_issue() {
     return 0
   fi
   if [[ -z "$st" ]]; then
-    echo "issue: UNKNOWN (#$ISSUE — could not read state)"
+    echo "issue: UNKNOWN (#$ISSUE -- could not read state)"
     return 0
   fi
   # GitHub did not auto-close it. Close it here rather than leaving a merged
@@ -162,9 +162,9 @@ confirm_issue() {
   if gh issue close "$ISSUE" \
        --comment "Closed by #$PR (merged). Auto-close did not fire, so closing explicitly." \
        >/dev/null 2>&1; then
-    echo "issue: CLOSED_MANUALLY (#$ISSUE — auto-close did not fire)"
+    echo "issue: CLOSED_MANUALLY (#$ISSUE -- auto-close did not fire)"
   else
-    echo "issue: STILL_OPEN (#$ISSUE — close it by hand)"
+    echo "issue: STILL_OPEN (#$ISSUE -- close it by hand)"
   fi
 }
 
@@ -196,7 +196,7 @@ fi
 
 # `gh pr merge` exited non-zero, which does NOT by itself mean the merge was
 # refused: `--delete-branch` also deletes the local branch, and that step fails
-# whenever the branch is still checked out — long after GitHub has already merged.
+# whenever the branch is still checked out -- long after GitHub has already merged.
 # Reporting that as MERGE_REFUSED sends the caller chasing a merge that landed,
 # so ask GitHub what actually happened before calling it a refusal.
 final="$(gh pr view "$PR" --json state -q .state 2>/dev/null)"

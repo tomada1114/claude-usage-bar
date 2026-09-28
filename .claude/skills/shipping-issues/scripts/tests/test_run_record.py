@@ -76,7 +76,7 @@ class FormatEntryTest(unittest.TestCase):
 
     def test_fields_render_as_k_equals_v(self):
         entry = rr.format_entry("merged", [("pr", "12"), ("issue", "7")], None, self.NOW)
-        self.assertEqual(entry, "- 2026-01-02T03:04:05Z merged — pr=12 issue=7\n")
+        self.assertEqual(entry, "- 2026-01-02T03:04:05Z merged -- pr=12 issue=7\n")
 
     def test_body_appends_fenced_block(self):
         entry = rr.format_entry("selection", [], "Selected: #12\nWhy: reasons", self.NOW)
@@ -141,7 +141,7 @@ class MainTest(unittest.TestCase):
             content = (state / "shipping-issues" / "acme__widgets" / "run.md").read_text()
             self.assertIn("## run ", content)
             self.assertIn("run-start", content)
-            self.assertIn("merged — pr=1 issue=2", content)
+            self.assertIn("merged -- pr=1 issue=2", content)
 
     def test_second_call_appends_not_overwrites(self):
         with tempfile.TemporaryDirectory() as td:
@@ -214,7 +214,7 @@ class MainTest(unittest.TestCase):
     def test_repo_without_slash_rejected(self):
         # No "/" means record_path()'s replace("/", "__") is a no-op, so a
         # value of exactly ".." would otherwise become a literal parent-dir
-        # path component — reject anything that isn't OWNER/NAME up front.
+        # path component -- reject anything that isn't OWNER/NAME up front.
         with tempfile.TemporaryDirectory() as td:
             state = Path(td) / "state"
             with patch.dict("os.environ", {"AGENT_SKILL_STATE_DIR": str(state)}):

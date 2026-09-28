@@ -93,7 +93,7 @@ class ApplyTest(unittest.TestCase):
 
 
 class EnsureLabelsTest(unittest.TestCase):
-    """ensure_labels() shells out to the real `gh` on PATH — route PATH at a
+    """ensure_labels() shells out to the real `gh` on PATH -- route PATH at a
     fake one instead of mocking subprocess, so the real subprocess.run stays
     untouched (mocking it here would recurse into gh()'s own call)."""
 
@@ -115,7 +115,7 @@ class EnsureLabelsTest(unittest.TestCase):
 
 
 class SetClearDesignTest(unittest.TestCase):
-    """set_design()/clear_design() shell out to the real `gh` on PATH — route
+    """set_design()/clear_design() shell out to the real `gh` on PATH -- route
     PATH at a fake one instead of mocking subprocess, same as EnsureLabelsTest."""
 
     def test_set_design_creates_label_when_repo_has_none(self):
@@ -177,7 +177,7 @@ class SetClearDesignTest(unittest.TestCase):
 
 
 class ClearDependencyTest(unittest.TestCase):
-    """clear_dependency() shells out to the real `gh` on PATH — route PATH at
+    """clear_dependency() shells out to the real `gh` on PATH -- route PATH at
     a fake one instead of mocking subprocess, same as SetClearDesignTest."""
 
     def test_removes_carried_label(self):
@@ -214,7 +214,7 @@ class MainEndToEndTest(unittest.TestCase):
     """Runs main() in-process against a fake `gh` on PATH. load_digest()
     still shells out to issue_digest.py as a real subprocess (that is its
     actual design), so only apply_priority_labels.py's own lines are covered
-    here — issue_digest.py has its own in-process tests."""
+    here -- issue_digest.py has its own in-process tests."""
 
     def _run(self, args, responses, path_override=None):
         with FakeGh(responses) as fake:
@@ -322,12 +322,12 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertEqual(rc, 0, err)
         self.assertIn("verdict: OK", out)
         # No issue/pr calls means load_digest() (and thus issue_digest.py)
-        # never ran — --ensure-labels alone must not touch the backlog.
+        # never ran -- --ensure-labels alone must not touch the backlog.
         self.assertFalse(any(c[:2] == ["issue", "list"] for c in fake.calls))
 
     def test_set_on_issue_not_in_open_digest_still_labels_it(self):
         # #99 is a valid --set target that the digest does not return (closed,
-        # or filtered out) — it must still get labeled, not treated as an error.
+        # or filtered out) -- it must still get labeled, not treated as an error.
         issues = json.dumps([issue(12, [])])
         rc, out, err, fake = self._run(
             ["--set", "99=P1", "--json"],
@@ -345,7 +345,7 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertEqual(payload["changed"][0]["was"], "not-open")
 
     def test_set_design_via_main_never_calls_the_digest(self):
-        # --set-design alone must not shell out to issue_digest.py — it needs
+        # --set-design alone must not shell out to issue_digest.py -- it needs
         # only the repo's label list and the one issue, not the whole backlog.
         # Written without self._run(): that helper returns `fake` only after
         # its own `with FakeGh(...)` block has already exited and cleaned up
@@ -465,7 +465,7 @@ class MainEndToEndTest(unittest.TestCase):
 
 
 class GhErrorBranchesTest(unittest.TestCase):
-    """The direct-exec error paths in gh() and load_digest() — narrow enough
+    """The direct-exec error paths in gh() and load_digest() -- narrow enough
     that unit-level mocks are clearer than routing another fake gh."""
 
     def test_gh_missing_binary_exits_1(self):
@@ -501,7 +501,7 @@ class GhErrorBranchesTest(unittest.TestCase):
         self.assertEqual(cm.exception.code, 1)
 
     def test_no_write_access_exits_2(self):
-        # The gh() wrapper is what maps a 403 to exit 2 — covered directly
+        # The gh() wrapper is what maps a 403 to exit 2 -- covered directly
         # rather than via a full subprocess round-trip.
         with patch("apply_priority_labels.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(

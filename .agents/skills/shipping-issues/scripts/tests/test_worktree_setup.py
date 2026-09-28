@@ -5,7 +5,7 @@ Run: python3 -m unittest discover -s scripts/tests -p 'test_*.py'
      (from the shipping-issues skill directory)
 
 worktree_setup.sh never calls `gh` (it only touches git and the local
-filesystem), so these tests don't use FakeGh — they drive real, disposable
+filesystem), so these tests don't use FakeGh -- they drive real, disposable
 git repos under tempfile.TemporaryDirectory() instead.
 """
 from __future__ import annotations
@@ -83,7 +83,7 @@ class WorktreeSetupTest(unittest.TestCase):
 
                     self.assertEqual(proc.returncode, 0)
                     self.assertIn(
-                        "worktree_setup.sh — Turn a bare `git worktree`",
+                        "worktree_setup.sh -- Turn a bare `git worktree`",
                         proc.stdout,
                     )
                     self.assertIn("Exit codes:", proc.stdout)
@@ -169,6 +169,63 @@ class WorktreeSetupTest(unittest.TestCase):
         self.assertIn("copied: .claude/settings.local.json\n", proc.stdout)
         self.assertNotIn("copied: .env.example\n", proc.stdout)
         self.assertNotIn("copied: .envrc\n", proc.stdout)
+
+    def test_copies_untracked_config_local_xcconfig(self):
+        # The template's gitignored local signing identity: without it a
+        # worktree's Debug build signs differently from the main checkout's.
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            repo = td / "repo"
+            repo.mkdir()
+            make_repo(repo)
+            (repo / ".gitignore").write_text("Config/Local.xcconfig\n", encoding="utf-8")
+            (repo / "Config").mkdir()
+            (repo / "Config" / "Debug.xcconfig").write_text(
+                '#include? "Local.xcconfig"\n', encoding="utf-8"
+            )
+            git(repo, "add", ".gitignore", "Config/Debug.xcconfig")
+            git(repo, "commit", "-qm", "config")
+            (repo / "Config" / "Local.xcconfig").write_text(
+                "DEVELOPMENT_TEAM = TEAMID1234\n", encoding="utf-8"
+            )
+            root = td / "worktrees"
+
+            proc = run_script(
+                ["--issue", "11", "--branch", "feat/11", "--base", "main", "--root", str(root)],
+                repo,
+            )
+            wt = root / "11"
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertEqual(
+                (wt / "Config" / "Local.xcconfig").read_text(encoding="utf-8"),
+                "DEVELOPMENT_TEAM = TEAMID1234\n",
+            )
+            # The main checkout is untouched: the copy lands only in the worktree.
+            status = git(repo, "status", "--porcelain").stdout
+            self.assertEqual(status, "")
+
+        self.assertIn("copied: Config/Local.xcconfig\n", proc.stdout)
+
+    def test_tracked_config_local_xcconfig_is_not_recopied(self):
+        with tempfile.TemporaryDirectory() as td:
+            td = Path(td)
+            repo = td / "repo"
+            repo.mkdir()
+            make_repo(repo)
+            (repo / "Config").mkdir()
+            (repo / "Config" / "Local.xcconfig").write_text("A = 1\n", encoding="utf-8")
+            git(repo, "add", "Config/Local.xcconfig")
+            git(repo, "commit", "-qm", "tracked on purpose")
+            root = td / "worktrees"
+
+            proc = run_script(
+                ["--issue", "12", "--branch", "feat/12", "--base", "main", "--root", str(root)],
+                repo,
+            )
+
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertNotIn("copied: Config/Local.xcconfig\n", proc.stdout)
+        self.assertIn("copied: none\n", proc.stdout)
 
     def test_reentry_against_existing_worktree_is_idempotent(self):
         with tempfile.TemporaryDirectory() as td:

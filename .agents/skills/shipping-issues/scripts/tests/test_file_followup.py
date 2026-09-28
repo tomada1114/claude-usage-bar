@@ -30,7 +30,7 @@ class ResolveTierLabelTest(unittest.TestCase):
 
     def test_reuses_repo_alias_instead_of_creating_canonical(self):
         # A repo that already spells the tier as "p2" must not also gain a
-        # parallel "priority: P2" — that would split its own backlog in two.
+        # parallel "priority: P2" -- that would split its own backlog in two.
         label = ff.resolve_tier_label("P2", ["p2", "bug"], dry_run=True)
         self.assertEqual(label, "p2")
 
@@ -102,7 +102,7 @@ class MainEndToEndTest(unittest.TestCase):
 
     def test_no_write_access_exits_2(self):
         # label list is empty, so resolve_tier_label must create the
-        # canonical label — simulate the write-access failure right there.
+        # canonical label -- simulate the write-access failure right there.
         with tempfile.TemporaryDirectory() as td:
             body = Path(td) / "body.txt"
             body.write_text("x")
@@ -157,6 +157,35 @@ class MainEndToEndTest(unittest.TestCase):
         self.assertTrue(payload["dry_run"])
         self.assertEqual(payload["repo"], "acme/widgets")
 
+    def test_found_while_provenance_line_is_english_only(self):
+        # The filed body is read back from the temp file gh is handed, before
+        # file_followup.py removes it.
+        filed = {}
+        real_gh = ff.gh
+
+        def capture(args, check=True):
+            if args[:2] == ["issue", "create"]:
+                path = args[args.index("--body-file") + 1]
+                filed["body"] = Path(path).read_text(encoding="utf-8")
+            return real_gh(args, check=check)
+
+        with tempfile.TemporaryDirectory() as td:
+            body = Path(td) / "body.txt"
+            body.write_text("Observed defect.")
+            with patch("file_followup.gh", side_effect=capture):
+                rc, out, err, fake = self._run(
+                    ["--title", "t", "--body-file", str(body), "--tier", "P3",
+                     "--found-while", "42", "--repo", "acme/widgets", "--json"],
+                    {
+                        ("repo", "view"): "acme/widgets\n",
+                        ("label", "list"): json.dumps([{"name": "priority: P3"}]),
+                        ("issue", "create"): "https://github.com/acme/widgets/issues/99\n",
+                    },
+                )
+        self.assertEqual(rc, 0, err)
+        self.assertIn("\n\n---\n\n*Found while shipping #42.*\n", filed["body"])
+        self.assertTrue(filed["body"].isascii(), filed["body"])
+
     def test_needs_design_adds_resolved_label_dry_run(self):
         with tempfile.TemporaryDirectory() as td:
             body = Path(td) / "body.txt"
@@ -208,7 +237,7 @@ class MainEndToEndTest(unittest.TestCase):
 
     def test_needs_design_files_with_label_and_creates_it_when_absent(self):
         # Written without self._run(): fake.calls must be read while the
-        # FakeGh block is still open — see the analogous note in
+        # FakeGh block is still open -- see the analogous note in
         # test_apply_priority_labels.py's test_set_design_via_main_never_calls_the_digest.
         with tempfile.TemporaryDirectory() as td:
             body = Path(td) / "body.txt"

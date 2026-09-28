@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# link_check.sh — Verify a PR will auto-close its issue when it merges.
+# link_check.sh -- Verify a PR will auto-close its issue when it merges.
 #
 # GitHub only closes an issue automatically when BOTH hold:
-#   1. the PR body (or a commit message) carries a closing keyword —
-#      "Closes #N" / "Fixes #N" / "Resolves #N" — and
+#   1. the PR body (or a commit message) carries a closing keyword --
+#      "Closes #N" / "Fixes #N" / "Resolves #N" -- and
 #   2. the PR merges into the repository's DEFAULT branch.
 # A PR that merely says "see #N", or one targeting a non-default base, leaves
 # the issue open. This script checks both and can repair case 1.
@@ -13,7 +13,7 @@
 #   --issue N   require that issue #N specifically is in the closing set
 #   --fix       if it is not, append "Closes #N" to the PR body and re-check
 #   --dry-run   with --fix, print what would be appended instead of calling
-#               `gh pr edit` — makes no change to the PR, exits with the
+#               `gh pr edit` -- makes no change to the PR, exits with the
 #               status code the real (non-dry) run would have used
 #
 # Prints:
@@ -25,7 +25,7 @@
 
 set -uo pipefail
 
-# print_help — the script's own usage, derived straight from this header
+# print_help -- the script's own usage, derived straight from this header
 # comment so the text lives in exactly one place. Must run BEFORE the
 # positional PR argument below is consumed, or `link_check.sh --help` sets
 # PR="--help" and forwards it straight to `gh` instead of showing this.
@@ -75,7 +75,7 @@ closes="$(closing_numbers)"
 # --- repair a missing closing keyword --------------------------------------
 if [[ -n "$ISSUE" && $FIX -eq 1 ]] && ! printf ',%s,' "$closes" | grep -q ",$ISSUE,"; then
   if [[ $DRY -eq 1 ]]; then
-    echo "fix: would append 'Closes #$ISSUE' to PR #$PR body (dry run — no change made)"
+    echo "fix: would append 'Closes #$ISSUE' to PR #$PR body (dry run -- no change made)"
     # Simulate a successful fix for the verdict/exit-code below, since that is
     # the outcome a dry run is meant to preview. No gh pr edit call is made.
     closes="${closes:+$closes,}$ISSUE"
@@ -83,7 +83,7 @@ if [[ -n "$ISSUE" && $FIX -eq 1 ]] && ! printf ',%s,' "$closes" | grep -q ",$ISS
     tmp="$(mktemp "${TMPDIR:-/tmp}/link_check_body.XXXXXX")" || { echo "verdict: ERROR"; echo "detail: mktemp failed"; exit 3; }
     if ! gh pr view "$PR" --json body -q .body > "$tmp" 2>/dev/null; then
       echo "verdict: ERROR"
-      echo "detail: could not read PR #$PR body — refusing to rewrite it"
+      echo "detail: could not read PR #$PR body -- refusing to rewrite it"
       rm -f "$tmp"
       exit 3
     fi

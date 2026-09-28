@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""apply_priority_labels.py — Write the `priority: P0..P3` labels this skill ranks by.
+"""apply_priority_labels.py -- Write the `priority: P0..P3` labels this skill ranks by.
 
 The tier label is the backlog's persisted priority. Once every open issue
 carries one, `issue_digest.py` orders the backlog by reading labels, and no
@@ -29,12 +29,12 @@ Usage:
 
 `--set-design`/`--clear-design` mark or clear the soft "design not settled"
 block (`blocked: design` or a recognized equivalent) that excludes an issue
-from automatic selection — see references/dependency-triage.md. Independent
+from automatic selection -- see references/dependency-triage.md. Independent
 of the tier machinery above; tier and design-readiness are orthogonal.
 
 `--clear-dependency` removes a dependency-block label (`blocked: dependency`
 or a recognized equivalent) once issue_digest.py reports every dependency the
-issue records as closed — see its `stale_dependency_labels` field and
+issue records as closed -- see its `stale_dependency_labels` field and
 references/dependency-triage.md. Readiness never reads this label; clearing it
 only corrects what a human reading the backlog sees. It may be combined with
 --set-design/--clear-design in one call, but not with --backfill/--set/
@@ -43,7 +43,7 @@ only corrects what a human reading the backlog sees. It may be combined with
 Exit codes:
     0 = labels applied (possibly zero changes)
     1 = gh invocation failed
-    2 = no write access to this repo — labels cannot be used here; rank from the
+    2 = no write access to this repo -- labels cannot be used here; rank from the
         digest's suggested tiers instead and do not retry
     3 = invalid argument (unknown tier, unparsable --set)
 """
@@ -95,7 +95,7 @@ def gh(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
 
 
 def load_digest() -> dict[str, Any]:
-    """Open issues with their tiers and suggestions — bodies deliberately omitted."""
+    """Open issues with their tiers and suggestions -- bodies deliberately omitted."""
     proc = subprocess.run(
         [sys.executable, str(DIGEST), "--json", "--body-chars", "0"],
         capture_output=True, text=True, timeout=180,
@@ -160,7 +160,7 @@ def set_design(number: int, dry_run: bool) -> str:
 
 def clear_labels_in(number: int, label_set: set[str], dry_run: bool) -> list[str]:
     """Remove whichever label(s) in `label_set` (normalize_label() keys) the
-    issue actually carries. Returns the label names removed — empty when the
+    issue actually carries. Returns the label names removed -- empty when the
     issue carried none, which is success, not an error."""
     carried = [lbl for lbl in issue_labels(number)
               if normalize_label(lbl) in label_set]
@@ -174,7 +174,7 @@ def clear_labels_in(number: int, label_set: set[str], dry_run: bool) -> list[str
 
 def clear_design(number: int, dry_run: bool) -> list[str]:
     """Remove whichever design-block label(s) the issue actually carries.
-    Returns the label names removed — empty when the issue carried none, which
+    Returns the label names removed -- empty when the issue carried none, which
     is success, not an error (this is the routine call after a design is
     decided, and the issue may have been taken on with --include-design
     instead of ever being labeled)."""
@@ -183,7 +183,7 @@ def clear_design(number: int, dry_run: bool) -> list[str]:
 
 def clear_dependency(number: int, dry_run: bool) -> list[str]:
     """Remove whichever dependency-block label(s) the issue actually carries.
-    Returns the label names removed — empty when the issue carried none, which
+    Returns the label names removed -- empty when the issue carried none, which
     is success, not an error (this is the routine call after issue_digest.py
     has reported the issue's dependencies as all closed, via its
     `stale_dependency_labels` field)."""
@@ -244,14 +244,14 @@ def main() -> int:
     if (args.set_design or args.clear_design or args.clear_dependency) and \
             (args.backfill or args.set or args.ensure_labels):
         p.error("--set-design/--clear-design/--clear-dependency run standalone "
-                "— combine with --backfill, --set, or --ensure-labels in "
+                "-- combine with --backfill, --set, or --ensure-labels in "
                 "separate calls")
     if not shutil.which("gh"):
         print("error: gh CLI not found", file=sys.stderr)
         return 1
 
     # Design-block and dependency-block state are independent of the tier
-    # machinery below — no digest fetch needed.
+    # machinery below -- no digest fetch needed.
     if args.set_design or args.clear_design or args.clear_dependency:
         design_set = [(n, set_design(n, args.dry_run)) for n in dict.fromkeys(args.set_design)]
         design_cleared = [(n, clear_design(n, args.dry_run))
@@ -277,8 +277,8 @@ def main() -> int:
             for n, removed in dependency_cleared:
                 print(f"#{n}: dependency-block cleared" if removed
                       else f"#{n}: dependency-block already clear")
-            print(f"verdict: OK\ndesign-{verb}: {len(design_set)} · "
-                  f"design-cleared: {len(design_cleared)} · "
+            print(f"verdict: OK\ndesign-{verb}: {len(design_set)} | "
+                  f"design-cleared: {len(design_cleared)} | "
                   f"dependency-cleared: {len(dependency_cleared)}")
         return 0
 
@@ -297,7 +297,7 @@ def main() -> int:
                 continue
             # A tier the author declared in the issue's ship contract is a
             # settled decision, and writing the heuristic guess over it would
-            # replace a human's answer with a score — the one thing a backfill
+            # replace a human's answer with a score -- the one thing a backfill
             # must never do. The label still gets written, so the tier ends up
             # where every later run reads it; it is just the author's tier.
             if rec.get("contract_tier"):
@@ -313,7 +313,7 @@ def main() -> int:
         rec = issues.get(number)
         if rec is None:
             # Not in the open-issue digest: closed, or filtered out. Still label
-            # it — an explicit --set on a just-closed issue is not an error.
+            # it -- an explicit --set on a just-closed issue is not an error.
             missing.append(number)
             if apply(number, tier, [], args.dry_run):
                 changed.append((number, tier, why, "not-open"))
@@ -325,7 +325,7 @@ def main() -> int:
 
     verb = "would set" if args.dry_run else "set"
     breakdown = " ".join(
-        f"{t}×{sum(1 for _, tier, _, _ in changed if tier == t)}"
+        f"{t}={sum(1 for _, tier, _, _ in changed if tier == t)}"
         for t in TIER_ORDER if any(tier == t for _, tier, _, _ in changed)
     )
     if args.as_json:
@@ -349,8 +349,8 @@ def main() -> int:
     print(f"verdict: OK\n"
           f"labels-{'to-create' if args.dry_run else 'created'}: "
           f"{', '.join(created) or 'none'}\n"
-          f"{verb}: {len(changed)}{f' ({breakdown})' if breakdown else ''} · "
-          f"already-correct: {len(unchanged)} · "
+          f"{verb}: {len(changed)}{f' ({breakdown})' if breakdown else ''} | "
+          f"already-correct: {len(unchanged)} | "
           f"coverage: {min(after, coverage['total'])}/{coverage['total']} open issues labeled")
     return 0
 
