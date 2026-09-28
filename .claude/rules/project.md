@@ -70,10 +70,22 @@ paths:
 
 - `.xcode-version` is the single source of truth for the CI Xcode pin (every macOS job
   derives `DEVELOPER_DIR` from it); CLI tools are pinned in `mise.toml`
-- Pin bumps arrive as bot PRs, never by hand: Dependabot (`.github/dependabot.yml`) for SwiftPM
-  and Actions, Renovate (`.github/renovate.json`, `enabledManagers: ["mise"]`) for `mise.toml`.
-  CI on the PR is the gate; merge when it is green
+- This section is the one statement of the pin-bump policy; `mise.toml`, the
+  `changing-gates` skill, and `check-pr-title.yml` point here rather than restate it
+- Bot-bumped pins arrive as bot PRs, never by hand: Dependabot (`.github/dependabot.yml`)
+  for SwiftPM (`Package.resolved`, prefix `deps:`) and GitHub Actions (prefix `ci:`),
+  Renovate (`.github/renovate.json`, `enabledManagers: ["mise"]`, prefix `deps:`) for
+  `mise.toml`. CI on the PR is the gate; merge when it is green. A SwiftLint or
+  SwiftFormat bump may fire new rules — fix the code on that PR, never skip the bump
 - Both wait 7 days after a release (Dependabot's `cooldown.default-days`, Renovate's
   `minimumReleaseAge`) before opening a PR, so a compromised fresh release has time to be pulled; note that
   SwiftPM itself has no resolver-level cooldown (unlike uv's `exclude-newer`), so fresh installs
   are only protected by the committed `Package.resolved`
+- `.xcode-version` is the one hand-bumped pin: neither bot has an ecosystem for it, and
+  the value must name an Xcode that GitHub's macOS runner image actually installs
+  (`/Applications/Xcode_<version>.app`), which no release feed tracks. Bump it by hand
+  in a `ci:` PR once the runner image ships the new Xcode, keep
+  `docs/getting-started.md`'s Xcode requirement in step, and let the PR's macOS jobs
+  prove the path exists
+- `.github/workflows/check-pr-title.yml` accepts the bots' prefixes (`deps`, `ci`); a
+  prefix change in either bot config changes that list in the same PR

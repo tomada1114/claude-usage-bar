@@ -125,11 +125,13 @@ data-race errors and with warnings allowed. Removing an entry, or adding an
 ## `mise.toml`
 
 It pins every CLI tool the gates call; scripts call those tools by bare name and the
-caller provides PATH. A pin is bumped deliberately, one commit per bump, after
-`just check` passes (`.claude/rules/project.md`'s Toolchain Pinning). A SwiftLint or
-SwiftFormat bump is a gate change in its own right: new rules or formatting may fire,
-and the fix is to the code or a reasoned `disabled_rules` entry, never to skip the bump
-silently. The Xcode pin lives in `.xcode-version`, not here.
+caller provides PATH. Pins are not bumped by hand: Renovate opens the bump PRs after
+a 7-day cooldown, and `.claude/rules/project.md`'s Toolchain Pinning is the one
+statement of that policy, including why `.xcode-version` is the exception that is
+hand-bumped. A SwiftLint or SwiftFormat bump PR is a gate change in its own right: new
+rules or formatting may fire, and the fix is to the code or a reasoned `disabled_rules`
+entry on that PR, never to skip the bump silently. The Xcode pin lives in
+`.xcode-version`, not here.
 
 ## `scripts/coverage.sh`
 
