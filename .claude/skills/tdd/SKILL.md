@@ -69,7 +69,7 @@ Clean up (naming, extraction, dead code) while tests stay green, then run the
 full local gate including the coverage floor:
 
 ```bash
-just check   # fmt → lint → test (80% floor on MyAppCore) → build
+just check   # verify-hooks → fmt → lint → test-scripts → check-harness → test → build
 ```
 
 If coverage dropped below the floor, write more tests for the code you added —

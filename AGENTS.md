@@ -446,7 +446,7 @@ These gaps are deliberate and stay open until their tracking issue closes them:
 
 Before submitting a PR:
 
-1. `just check` passes (format, lint, tests + coverage, build)
+1. `just check` passes (every step of the justfile's `check` recipe)
 2. New public APIs have `///` doc comments explaining *why*
 3. Tests cover the new functionality (happy path AND error path); a change under
    `Sources/MyAppPlatform/` also carries `just test-local` output in the PR, since no

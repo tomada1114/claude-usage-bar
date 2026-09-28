@@ -345,6 +345,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `just check` step lists in `README.md`, `docs/getting-started.md`, `CONTRIBUTING.md`,
+  `AGENTS.md`, and the `create-pr` and `tdd` skills now match the justfile's `check`
+  recipe, and every recipe shows a one-line summary in `just --list` (`[doc(...)]`).
+
 - `scripts/bootstrap.sh` no longer rewrites the passages that explain its placeholders
   (its own header, `README.md`'s "Using This Template" paragraph, and the
   `starting-an-app` skill), which read as nonsense after the rename: lines between a keep-begin

@@ -64,14 +64,15 @@ just reset-permissions
 # Launch guarantee (Release build + alive check)
 just smoke
 
-# Run everything (format → lint → script tests → harness checks → test → build)
+# Run everything (verify-hooks → fmt → lint → test-scripts → check-harness → test → build)
 just check
 
 # Prepare a release: version bump + changelog roll, checked (docs/distribution.md)
 just release-prep 0.2.0
 ```
 
-**Without Just**, run the equivalent commands:
+**Without Just**, run the equivalent commands (`just check` is the justfile's
+`check` recipe: verify-hooks, fmt, lint, test-scripts, check-harness, test, build):
 
 ```bash
 mise install

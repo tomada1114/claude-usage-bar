@@ -25,7 +25,7 @@ git clone https://github.com/your-username/my-app.git
 cd my-app
 mise trust     # approve mise.toml once — mise refuses untrusted configs
 just install   # pinned tools via mise + git hooks + xcodegen generate
-just check     # format → lint → script tests → test (80% floor) → build
+just check     # verify-hooks → fmt → lint → test-scripts → check-harness → test → build
 open MyApp.xcodeproj
 ```
 

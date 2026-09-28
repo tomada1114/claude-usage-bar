@@ -23,7 +23,7 @@ SwiftFormat, XcodeGen, xcbeautify, actionlint, ShellCheck, typos — all pinned)
 ## Everyday Commands
 
 ```bash
-just check     # the full local gate: fmt → lint → test → build
+just check     # the full local gate: verify-hooks → fmt → lint → test-scripts → check-harness → test → build
 just test      # Swift Testing suite + 80% coverage floor on MyAppCore
 just uitest    # XCUITest launch test (first local run may prompt for Accessibility)
 just smoke     # Release build + "does it actually launch" assertion

@@ -24,6 +24,7 @@ fmt:
 
 # Format and auto-fix SwiftLint violations, then run the full lint check: some
 # violations have no safe auto-fix, and the check reports what still needs a hand edit
+[doc("Format, auto-fix SwiftLint violations, then run the full lint check")]
 fix:
     mise exec -- swiftformat .
     mise exec -- swiftlint lint --fix --quiet
@@ -39,12 +40,14 @@ verify-hooks:
 
 # Run the plain-bash tests for the scripts under scripts/ (through mise: the
 # scripts/checks/ tests call the pinned `just`)
+[doc("Run the plain-bash tests for scripts/ and the skills' Python suites")]
 test-scripts:
     mise exec -- scripts/tests/run.sh
 
 # Re-assert the harness's claims about itself: recipe names in AGENTS.md, workflow
 # pins and permissions, skill frontmatter, the Skills index, and the Product section
 # (scripts/checks/)
+[doc("Re-assert the harness's claims about itself (scripts/checks/)")]
 check-harness:
     mise exec -- scripts/checks/run-all.sh
 
@@ -54,6 +57,7 @@ test:
 
 # Run only the tests matching FILTER (swift test --filter), with no coverage floor —
 # for fast local iteration; `just test` is still the gate
+[doc("Run only the tests matching FILTER, with no coverage floor")]
 test-fast filter:
     cd Packages/MyAppKit && swift test --filter '{{filter}}'
 
@@ -64,17 +68,20 @@ build:
 
 # Build (Debug), quit any running instance of this app, and launch the fresh
 # build, left running until you quit it (scripts/run-app.sh)
+[doc("Build (Debug), quit any running instance, and launch the fresh build")]
 run: build
     scripts/run-app.sh
 
 # Make macOS forget every permission (TCC) decision for this app — and only this
 # app, whose bundle identifier is read from project.yml — so the next launch asks
 # again (scripts/reset-permissions.sh)
+[doc("Make macOS forget this app's permission (TCC) grants")]
 reset-permissions:
     scripts/reset-permissions.sh
 
 # Stream this app's unified-log output (subsystem == the bundle identifier
 # project.yml declares), until you stop it with Ctrl-C
+[doc("Stream this app's unified-log output (Ctrl-C to stop)")]
 logs:
     bundle_id="$(scripts/bundle-id.sh)" && log stream --predicate "subsystem == \"${bundle_id}\"" --level debug
 
@@ -90,6 +97,7 @@ smoke:
 
 # Run all checks: verify hooks, format, lint, script tests, harness checks, test, build
 # (CI's app job adds uitest + smoke)
+[doc("Run all checks: verify-hooks, fmt, lint, test-scripts, check-harness, test, build")]
 check: verify-hooks fmt lint test-scripts check-harness test build
 
 # Regenerate the .claude/skills/ mirror from .agents/skills/ (run after any skill edit)
@@ -107,6 +115,7 @@ clean:
 # Create or update this repository's GitHub labels from .github/labels.yml
 # (never deletes). Requires `gh`, authenticated against this repository: it is
 # not a mise tool (see mise.toml), so it comes from your own PATH, not `mise exec --`.
+[doc("Create or update GitHub labels from .github/labels.yml (never deletes)")]
 labels:
     scripts/sync-labels.sh
 
@@ -114,6 +123,7 @@ labels:
 # (admin-only: applying a ruleset needs repository admin permissions). Requires
 # `gh`, authenticated against this repository: like `labels` above, it is not a
 # mise tool, so it comes from your own PATH, not `mise exec --`.
+[doc("Create or update the \"main\" branch ruleset (admin-only)")]
 ruleset:
     scripts/apply-ruleset.sh
 
@@ -134,6 +144,7 @@ ruleset:
 #
 # Run it before a PR that touches an adapter, and paste the result in the PR: no gate
 # can do it for you.
+[doc("Run the local-machine adapter tests (MyAppPlatformTests) CI cannot run")]
 test-local:
     cd Packages/MyAppKit && RUN_LOCAL_MACHINE_TESTS=1 swift test --filter 'MyAppPlatformTests'
 
@@ -149,5 +160,6 @@ test-local:
 # as a single argument. So an argument containing whitespace cannot come through this
 # recipe — call the script directly for that (`scripts/release-prep.sh --root "dir
 # with space" 0.2.0`), which only its tests need.
+[doc("Set MARKETING_VERSION, bump the build, and roll CHANGELOG.md (no commit/tag/push)")]
 release-prep *args:
     scripts/release-prep.sh {{ args }}

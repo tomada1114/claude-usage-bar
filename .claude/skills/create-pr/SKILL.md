@@ -44,7 +44,8 @@ Run the full quality check suite. This is the prerequisite for PR creation.
 just check
 ```
 
-`just check` runs `fmt -> lint -> test -> build` sequentially.
+`just check` runs `verify-hooks -> fmt -> lint -> test-scripts -> check-harness -> test -> build`
+sequentially (the justfile's `check` recipe is the source of truth).
 **If any step fails, abort PR creation** and report the failure.
 
 On success, the "All checks pass (`just check`)" checklist item is verified:
@@ -120,7 +121,7 @@ Fill each item based on verification results from Steps 2-3:
 
 | Item | Criteria |
 |------|----------|
-| All checks pass | `just check` passed (fmt, lint, test + coverage floor, build) |
+| All checks pass | `just check` passed (every step of the justfile's `check` recipe) |
 | New logic lives in MyAppCore and is covered | Verified in Step 3; no-logic changes = checked |
 | Adapter change: `just test-local` output in the Test Plan | Required only when `Sources/MyAppPlatform` changed — CI reports those tests as skipped, so the run is yours. No adapter change = checked |
 | Documentation updated | Required only when public API or behavior changed. No change = checked |
