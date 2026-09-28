@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `designing-errors` skill: error enums in `MyAppCore`, typed `throws(E)` only where
+  a caller switches on the cases, no user data in error payloads or log lines,
+  `CancellationError` propagated rather than swallowed, and how a `MyAppPlatform`
+  adapter maps `OSStatus`, `NSError`, and `AXError` into Core errors.
 - A "Removing the example code" checklist in `docs/getting-started.md` covering the
   counter and the `FrontmostApp` port/adapter (port, view model, adapter, fake,
   local-machine test, `AppLog.frontmostApp`, the `ContentView` row, the composition

@@ -28,6 +28,7 @@ paths:
 - NEVER `try!` or force-unwrap (`!`) in production code; `guard let`/`throws` instead
 - Never swallow errors silently; if catching, handle meaningfully or rethrow
 - Never use errors for control flow
+- Typed vs. plain `throws`, cancellation, payload privacy, and OS-error mapping: the `designing-errors` skill
 
 ## Logging
 
