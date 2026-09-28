@@ -129,7 +129,17 @@ checks every tracked `*.sh`, at any depth), the `ERR_<STAGE>_<WHAT>` failure con
 and a test under `scripts/tests/` built on `scripts/tests/lib.sh`, which
 `scripts/tests/run.sh` (`just test-scripts`) runs. Keep it a thin dispatcher; anything
 with real branching logic belongs in `scripts/`, where it is easier to find and test.
-No skill ships a script today.
+
+The one skill that ships scripts today is `shipping-issues`: Python helpers
+(`plan.py`, `issue_digest.py`, `run_record.py`, …) and bash wrappers (`ci_watch.sh`,
+`land_pr.sh`, …) under `.agents/skills/shipping-issues/scripts/`, with a Python
+`unittest` suite beside them in `scripts/tests/test_*.py`. That suite is not built on
+`scripts/tests/lib.sh`; `scripts/tests/skill-scripts_test.sh` runs every
+`.agents/skills/*/scripts/tests/` suite with `python3 -m unittest discover` under
+`PYTHONDONTWRITEBYTECODE=1`, fails on any failing test or a `__pycache__` left in the
+authored tree, and is itself run by `just test-scripts` and CI's `lint` job. A new
+skill's Python tests land in the same place and are picked up without a runner change.
+`python3` is assumed on PATH like `git`, not pinned in `mise.toml`.
 
 ## Why this needs its own test
 

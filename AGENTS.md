@@ -40,7 +40,7 @@ just fmt       # Format code (swiftformat)
 just fix       # Format, auto-fix SwiftLint violations, then run just lint
 just lint      # Lint (scripts/lint.sh: swiftformat --lint + swiftlint --strict + shellcheck + actionlint + typos)
 just verify-hooks  # Verify the git hooks are installed and executable (scripts/verify-hooks.sh)
-just test-scripts  # Run the plain-bash tests for scripts/ (scripts/tests/run.sh)
+just test-scripts  # Run the plain-bash tests for scripts/ and the skills' Python suites (scripts/tests/run.sh)
 just check-harness # Re-assert the harness's claims about itself (scripts/checks/run-all.sh)
 just test      # Run tests with the 80% coverage floor on MyAppCore
 just test-fast CounterTests  # Run only the matching tests, no coverage floor (iteration only)
@@ -87,7 +87,7 @@ job call.
 | `scripts/verify-hooks.sh` | `just lint`, then `just test-scripts`; `just verify-hooks` for the check itself |
 | A harness check under `scripts/checks/` (including the sourced `scripts/checks/lib.sh`) | `just lint`, then `just test-scripts`; `just check-harness` for the checks themselves |
 | A `just` recipe name, a workflow's `uses:` or `permissions:`, a skill's frontmatter, the Skills table, the `## Product` section, or `.claude/settings.json`'s `permissions` rules | `just check-harness` |
-| A skill under `.agents/skills/` | `just agents-sync`, then `just agents-check` and `just check-harness` |
+| A skill under `.agents/skills/` | `just agents-sync`, then `just agents-check` and `just check-harness`; `just test-scripts` too when the skill ships scripts (it runs their `scripts/tests/` unittest suite) |
 | A workflow under `.github/workflows/` | `just lint`, then `just check-harness` |
 | Markdown | `just lint` (its `typos` spell-check) |
 | `mise.toml` | `mise install`, then `just check` |

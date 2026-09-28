@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `just test-scripts` (and so CI's `lint` job) now runs the Python `unittest` suite
+  under `.agents/skills/shipping-issues/scripts/tests/`, through the new
+  `scripts/tests/skill-scripts_test.sh`, with `PYTHONDONTWRITEBYTECODE=1`.
 - `AGENTS.md`'s "Security and human approval" now lists the concrete Swift and CI
   forms of weakening a gate (`// swiftlint:disable`, `// swiftformat:disable`,
   `@unchecked Sendable` / `nonisolated(unsafe)`, `.disabled`/`withKnownIssue`,
