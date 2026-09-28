@@ -123,10 +123,46 @@ jobs:
           cd "$RUNNER_TEMP/bootstrap-smoke"
           # Author/email placeholders are intentionally kept (no --author/--email above).
           # README's leftover-check line is spelled with wildcards, so it never matches.
-          if grep -rilE 'my-?app|com\.example|your-username' . --exclude-dir=.git; then
-            echo "::error::bootstrap left placeholder leftovers in the files listed above"
+          # Lines inside bootstrap's keep markers explain the placeholders on purpose,
+          # so they are skipped (the marker names are split so this file never holds one).
+          grep -rilE 'my-?app|com\.example|your-username' . --exclude-dir=.git --null >"$RUNNER_TEMP/matches" || [ $? -eq 1 ]
+          # shellcheck disable=SC2016 # the perl program's $ variables are perl's, not the shell's
+          leftovers=$(KB="bootstrap:keep""-begin" KE="bootstrap:keep""-end" xargs -0 perl -ne '
+              $k = 1 if index($_, $ENV{KB}) >= 0;
+              print "$ARGV:$.: $_" if !$k && /my-?app|com\.example|your-username/i;
+              $k = 0 if index($_, $ENV{KE}) >= 0;
+              if (eof) { close ARGV; $k = 0 }
+            ' <"$RUNNER_TEMP/matches")
+          if [ -n "$leftovers" ]; then
+            printf '%s\n' "$leftovers"
+            echo "::error::bootstrap left placeholder leftovers on the lines listed above"
             exit 1
           fi
+
+      - name: Assert the placeholder-explaining passages survived
+        run: |
+          cd "$RUNNER_TEMP/bootstrap-smoke"
+          # These passages sit between keep markers, so the rename must leave them naming
+          # the original placeholders instead of turning them into nonsense.
+          status=0
+          check() {
+            grep -qF -- "$2" "$1" || { echo "::error file=$1::kept passage was rewritten: $2"; status=1; }
+          }
+          check scripts/bootstrap.sh "#   MyApp        -> NewName"
+          check scripts/bootstrap.sh "#   my-app       -> repo slug"
+          check README.md "This replaces \`MyApp\` (and \`MyAppKit\`/\`MyAppCore\`/\`MyAppUI\`), \`my-app\`,"
+          check .agents/skills/starting-an-app/SKILL.md "small set of literals — \`MyApp\`, \`my-app\`, \`com.example\`, \`your-username\`, \`Your Name\`,"
+          check .claude/skills/starting-an-app/SKILL.md "small set of literals — \`MyApp\`, \`my-app\`, \`com.example\`, \`your-username\`, \`Your Name\`,"
+          check .agents/skills/starting-an-app/SKILL.md "- **Paths** named after the app (\`MyAppKit\`, \`MyAppCore\`, …) are renamed deepest-first,"
+          # The header still prints as usage, without the marker lines (usage exits 1).
+          usage_out=$(bash scripts/bootstrap.sh 2>/dev/null || true)
+          if printf '%s\n' "$usage_out" | grep -F 'bootstrap:keep'; then
+            echo "::error::usage() prints the keep-marker lines"; status=1
+          fi
+          printf '%s\n' "$usage_out" | grep -qF 'MyApp        -> NewName' || {
+            echo "::error::usage() no longer prints the placeholder map"; status=1
+          }
+          exit "$status"
 
       - name: Assert CHANGELOG was reset
         run: |

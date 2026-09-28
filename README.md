@@ -125,10 +125,14 @@ secrets — no workflow edits. See docs/distribution.md.
      --author "Jane Doe" --email jane@example.com
    ```
 
+   <!-- bootstrap:keep-begin -->
    This replaces `MyApp` (and `MyAppKit`/`MyAppCore`/`MyAppUI`), `my-app`,
    `com.example`, `your-username`, `Your Name`, and `you@example.com` across
    all tracked files, renames the matching paths, and regenerates the Xcode
-   project. Omitted optional arguments leave their placeholders as-is.
+   project. Omitted optional arguments leave their placeholders as-is. This
+   paragraph, and the other passages that explain the placeholders, sit between
+   keep markers the script never rewrites, so they still read correctly after it runs.
+   <!-- bootstrap:keep-end -->
 3. Fill in `AGENTS.md`'s `## Product` section: what the app is and who it is
    for, the core interaction, and the **Non-goals** it must not grow — the
    agent instructions have no other in-repo answer to "is this in scope?".
@@ -141,7 +145,9 @@ secrets — no workflow edits. See docs/distribution.md.
    `CODE_OF_CONDUCT.md` for your app (the conduct-reporting contact stays
    `you@example.com` if `--email` was omitted, so check it), and review
    `LICENSE`'s copyright line (`CHANGELOG.md` is reset automatically)
-7. Replace the counter placeholder in `Packages/<YourApp>Kit` with real code —
+7. Replace or remove the example code — the counter and the `FrontmostApp`
+   port/adapter — following the checklist in
+   [docs/getting-started.md › Removing the example code](docs/getting-started.md#removing-the-example-code);
    keep the Core/UI split and the tests
 8. For signed releases, add the secrets listed in docs/distribution.md
 9. Optional, repository admin only: once the bootstrap commit is on `main`,

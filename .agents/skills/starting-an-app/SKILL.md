@@ -23,6 +23,7 @@ description: >
 repository script is written or tested (`writing-repo-scripts`); what a gate file may
 contain (`changing-gates`); the README's own prose (`updating-docs`).
 
+<!-- bootstrap:keep-begin -->
 This repository ships a bootstrap script on purpose. Its placeholders are a fixed,
 small set of literals — `MyApp`, `my-app`, `com.example`, `your-username`, `Your Name`,
 and `you@example.com` — with no framework inventory to enumerate, so a single literal
@@ -30,6 +31,7 @@ find-and-replace over tracked files is the whole job, and a script does it more
 reliably than a checklist would. The script stays in the tree after it runs, so the
 record of what it did is a file anyone can still read, and CI's `bootstrap-smoke` job
 runs it on a pristine clone on every push, so it cannot silently rot.
+<!-- bootstrap:keep-end -->
 
 ## The order
 
@@ -58,8 +60,17 @@ scripts/bootstrap.sh CoolApp --bundle-id-prefix io.example --github-user janedoe
   file before running if it should be renamed too. It skips binary and empty files and
   leaves a file without a match untouched. This is why the script refuses to run
   outside a git checkout (see `writing-repo-scripts`).
+- **Keep markers:** a line containing the keep-begin marker (the text `bootstrap:keep-`
+  followed by `begin`) through the next line containing the keep-end marker is never
+  rewritten. The passages that explain the placeholders — the script's header,
+  `README.md`'s "Using This Template" paragraph, and this skill's opening and
+  path-rename bullet — are wrapped in them (an HTML comment in Markdown, a `#` comment
+  in shell), so they still name the placeholders after the rename. CI's
+  `bootstrap-smoke` asserts they survive, and its leftover check ignores kept lines.
+<!-- bootstrap:keep-begin -->
 - **Paths** named after the app (`MyAppKit`, `MyAppCore`, …) are renamed deepest-first,
   skipping `.git/` and build output, and the Xcode project is regenerated.
+<!-- bootstrap:keep-end -->
 - **`.template-origin`** records where the app was cut from: the template commit on
   line 1, its repository on line 2, then comment lines. It is written only when the
   file is absent — a re-run, and any hand-edit made after adopting template changes,
@@ -85,7 +96,8 @@ replace cannot see — fix those by hand. `README.md`'s own leftover command spe
 for the same reason the script quote-splits them.
 
 Changing the script means keeping `bootstrap-smoke` green: it bootstraps a clone as
-`DemoApp`, asserts no placeholder survives, asserts the `CHANGELOG.md` reset, asserts
+`DemoApp`, asserts no placeholder survives outside the kept passages, asserts those
+passages still name the placeholders, asserts the `CHANGELOG.md` reset, asserts
 `.template-origin` holds a 40-hex commit SHA and a repository line, asserts
 the template-only job was retired (and re-runs `scripts/tests/apply-ruleset_test.sh`
 in the clone), asserts `product-section-filled.sh` now *fails* on the renamed tree —
@@ -94,6 +106,11 @@ runs `swift test` and an `xcodebuild` on the renamed tree. Its
 leftover grep is case-insensitive and allows a missing hyphen, so a new mention of the
 app name in a spelling the literal replace does not cover (all lowercase, say) fails
 that job.
+
+The rename leaves the example code in place: the counter and the `FrontmostApp`
+port/adapter are illustrations, not the app. Removing or replacing them is one
+checklist, `docs/getting-started.md` › "Removing the example code", which both
+`README.md` and the script's next steps point to.
 
 ## Filling in the Product section
 

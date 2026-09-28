@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# bootstrap:keep-begin
 # Template bootstrap: rename every placeholder to your app's identity.
 #
 #   scripts/bootstrap.sh NewName [--bundle-id-prefix ID] [--github-user USER]
@@ -19,6 +20,12 @@
 # start at the template's root commit — see the comment above the ORIGIN_FILE block).
 # Running it again with the same name is a no-op, so it is safe to re-run
 # (values a previous run already replaced are not replaced again).
+#
+# Passages that explain the placeholders (this header, README's "Using This
+# Template", the starting-an-app skill) sit between a keep-begin and a keep-end
+# marker line (KEEP_BEGIN and KEEP_END below spell them) and are never
+# rewritten, so they still read correctly after the rename.
+# bootstrap:keep-end
 set -euo pipefail
 
 # The placeholder literals are quote-split so replace() below never rewrites
@@ -30,10 +37,14 @@ PH_BUNDLE='com''.example'
 PH_USER='your''-username'
 PH_AUTHOR='Your'' Name'
 PH_EMAIL='you''@example.com'
+# The keep markers, split for the same reason: replace() would otherwise treat
+# the lines below that name them as markers.
+KEEP_BEGIN='bootstrap:keep''-begin'
+KEEP_END='bootstrap:keep''-end'
 
 usage() {
     # Print the header comment: lines after the shebang up to the first non-comment.
-    awk 'NR > 1 && !/^#/ { exit } NR > 1 { sub(/^# ?/, ""); print }' "$0"
+    awk 'NR > 1 && !/^#/ { exit } /bootstrap:keep-/ { next } NR > 1 { sub(/^# ?/, ""); print }' "$0"
     exit 1
 }
 
@@ -87,7 +98,8 @@ fi
 
 ORIGIN_FILE=".template-origin"
 
-replace() { # replace <from> <to> — literal replacement in all tracked text files
+replace() { # replace <from> <to> — literal replacement in all tracked text files,
+    # except lines from a KEEP_BEGIN marker line through the next KEEP_END line
     local from="$1" to="$2" file
     [ "${from}" = "${to}" ] && return 0
     git ls-files -z | while IFS= read -r -d '' file; do
@@ -98,7 +110,11 @@ replace() { # replace <from> <to> — literal replacement in all tracked text fi
         [ "${file}" != "${ORIGIN_FILE}" ] || continue
         grep -Iq . "${file}" 2>/dev/null || continue # skip binary and empty files
         grep -qF -- "${from}" "${file}" || continue  # leave non-matching files untouched
-        FROM="${from}" TO="${to}" perl -pi -e 's/\Q$ENV{FROM}\E/$ENV{TO}/g' "${file}"
+        FROM="${from}" TO="${to}" KB="${KEEP_BEGIN}" KE="${KEEP_END}" perl -pi -e '
+            $keep = 1 if index($_, $ENV{KB}) >= 0;
+            s/\Q$ENV{FROM}\E/$ENV{TO}/g unless $keep;
+            $keep = 0 if index($_, $ENV{KE}) >= 0;
+        ' "${file}"
     done
 }
 
@@ -241,8 +257,12 @@ echo "     'just check' fails until you do"
 echo "  2. Verify the rename: just install && just check"
 echo "  3. Create the label set on the new repository: just labels"
 echo "  4. Review the changes: git diff"
-echo "  5. Review LICENSE's copyright line (year and holder)"
-echo "  6. Check for leftovers: rg -i '${PH_NAME}|${PH_SLUG}|${PH_BUNDLE}|${PH_USER}'"
-echo "  7. Commit: git add -A && git commit -m 'chore: bootstrap ${NEW_NAME} from template'"
-echo "  8. Optional, repository admin only, after pushing that commit: just ruleset"
+echo "  5. Update README.md, SECURITY.md, the rest of AGENTS.md, and CODE_OF_CONDUCT.md"
+echo "     for your app, and review LICENSE's copyright line (year and holder)"
+echo "  6. Replace or remove the example code (the counter and the FrontmostApp"
+echo "     port/adapter): docs/getting-started.md, 'Removing the example code'"
+echo "  7. Check for leftovers: rg -i '${PH_NAME}|${PH_SLUG}|${PH_BUNDLE}|${PH_USER}'"
+echo "     (the passages that explain the placeholders are kept on purpose)"
+echo "  8. Commit: git add -A && git commit -m 'chore: bootstrap ${NEW_NAME} from template'"
+echo "  9. Optional, repository admin only, after pushing that commit: just ruleset"
 echo "     (applies the main branch ruleset, which then requires pull requests)"

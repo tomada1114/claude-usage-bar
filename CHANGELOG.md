@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A "Removing the example code" checklist in `docs/getting-started.md` covering the
+  counter and the `FrontmostApp` port/adapter (port, view model, adapter, fake,
+  local-machine test, `AppLog.frontmostApp`, the `ContentView` row, the composition
+  root, and the docs that cite it), linked from `README.md`, the `starting-an-app`
+  skill, and `scripts/bootstrap.sh`'s next steps.
+
 - `just test-scripts` (and so CI's `lint` job) now runs the Python `unittest` suite
   under `.agents/skills/shipping-issues/scripts/tests/`, through the new
   `scripts/tests/skill-scripts_test.sh`, with `PYTHONDONTWRITEBYTECODE=1`.
@@ -293,6 +299,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   layers row now describes both.
 
 ### Fixed
+
+- `scripts/bootstrap.sh` no longer rewrites the passages that explain its placeholders
+  (its own header, `README.md`'s "Using This Template" paragraph, and the
+  `starting-an-app` skill), which read as nonsense after the rename: lines between a keep-begin
+  and a keep-end marker comment are skipped. CI's
+  `bootstrap-smoke` asserts the kept passages survive and ignores them in its leftover
+  check. The script's next steps now match `README.md`'s list.
 
 - CI runs of pushes to `main` no longer cancel each other: `.github/workflows/ci.yml`
   groups push runs by commit SHA and cancels in progress only for a superseded pull

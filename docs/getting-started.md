@@ -88,6 +88,62 @@ just reset-permissions   # tccutil reset All <this app's bundle id>
 
 That drops your own grants for it, so the next launch prompts from scratch.
 
+## Removing the example code
+
+The template ships two examples, and both are illustrations for a new app to
+replace or delete — example code in a skill or a doc is likewise a sketch of
+the pattern, never something the app must keep. Work through this list after
+`scripts/bootstrap.sh` (the paths below carry your app's name once it has run),
+then run `just check`.
+
+**The counter** (the app's single screen):
+
+- [ ] `Packages/MyAppKit/Sources/MyAppCore/Counter.swift` and
+      `CounterViewModel.swift` — replace with your domain model and view model
+- [ ] `Packages/MyAppKit/Tests/MyAppCoreTests/CounterTests.swift` and
+      `CounterViewModelTests.swift` — replace with tests for your Core code, so
+      the 80% coverage floor still has something to measure
+- [ ] `Packages/MyAppKit/Sources/MyAppUI/ContentView.swift` — the counter text,
+      the three buttons, their accessibility identifiers, and both previews
+- [ ] `LaunchUITests/LaunchTests.swift` — `testAppLaunchesAndShowsCounter`
+      clicks `incrementButton` and reads `counterValue`; point it at an element
+      your first screen shows
+- [ ] `AGENTS.md` and `CONTRIBUTING.md` — the `just test-fast CounterTests`
+      examples; `.agents/skills/running-the-app/references/observing-behavior.md`
+      — the identifier list and the `-counterStart` snippets (edit the skill under
+      `.agents/skills/`, then `just agents-sync`)
+
+**The `FrontmostApp` example** (the worked ports-and-adapters example — keep it
+until your first real port exists if you want a pattern to copy):
+
+- [ ] The port: `Packages/MyAppKit/Sources/MyAppCore/FrontmostAppProviding.swift`
+- [ ] Its view model: `Packages/MyAppKit/Sources/MyAppCore/FrontmostAppViewModel.swift`
+- [ ] The adapter: `Packages/MyAppKit/Sources/MyAppPlatform/WorkspaceFrontmostAppProvider.swift`
+- [ ] The fake and the Core tests: `FakeFrontmostAppProvider` in
+      `Packages/MyAppKit/Tests/MyAppCoreTests/FrontmostAppViewModelTests.swift`
+- [ ] The local-machine test:
+      `Packages/MyAppKit/Tests/MyAppPlatformTests/WorkspaceFrontmostAppProviderTests.swift`
+      (if it was the last test there, keep the target with a test of your own
+      adapter, or remove the target from `Package.swift` together with its
+      `just test-local` references)
+- [ ] `AppLog.frontmostApp` in `Packages/MyAppKit/Sources/MyAppCore/AppLog.swift`,
+      plus the doc comment there that points at `FrontmostAppViewModel/refresh()`
+      — add a `Logger` for your own concern instead
+- [ ] The `ContentView` row: the `frontmostApp` property, its `init` parameter,
+      the `Frontmost:` label (`frontmostAppLabel`), and the `scenePhase`
+      refresh in `Packages/MyAppKit/Sources/MyAppUI/ContentView.swift`
+- [ ] The composition root: the `FrontmostAppViewModel(provider:
+      WorkspaceFrontmostAppProvider())` argument in `App/MyAppApp.swift`
+- [ ] The mentions that cite it as the worked example: `AGENTS.md` ›
+      Architecture ("The worked example is `FrontmostAppProviding` /
+      `WorkspaceFrontmostAppProvider`"), `docs/architecture.md` › Ports and
+      adapters and › Logging, and the skills `integrating-system-apis`,
+      `running-the-app`, and `starting-an-app/references/app-shapes.md` — point
+      them at your own port, or reword them (skills are edited under
+      `.agents/skills/`, then `just agents-sync`)
+
+`rg -i 'counter|frontmost'` then lists anything left.
+
 ## Open in Xcode
 
 ```bash
