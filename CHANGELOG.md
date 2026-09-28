@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `.claude/agents/executor.md`, `architect.md`, and `worker.md`: named Claude Code
+  sub-agent tiers (Opus low, Opus high, Sonnet medium) a skill can hand a step to,
+  documented in `AGENTS.md` › Sub-agents with the Codex CLI fallback of running the
+  step inline.
 - `blocked: external`, `on hold`, and `tracking` labels in `.github/labels.yml`,
   defined in `triaging-issues`: an issue only a person can move forward, work parked
   on purpose, and a tracking issue whose sub-issues carry the work. `shipping-issues`

@@ -190,6 +190,23 @@ matching its `paths:` globs.
 | `.claude/rules/swift.md` | `Packages/**/*.swift`, `App/**/*.swift` |
 | `.claude/rules/testing.md` | `Packages/**/Tests/**`, `LaunchUITests/**` |
 
+### Sub-agents
+
+`.claude/agents/` defines three named sub-agent tiers a skill or session can hand a
+step to by name (for example `subagent_type: executor`), each pinned to a model alias
+(`opus`/`sonnet`, never a dated model ID, so the definitions do not go stale) and an
+effort level:
+
+| Agent | Model / effort | Takes |
+|---|---|---|
+| `executor` | `opus` / low | a settled spec with a clear pass/fail: implementation, tests, getting a check green, bulk edits, research that only collects |
+| `architect` | `opus` / high | complex multi-file implementation, design judgment, review and bug finding, synthesis, a spec that still has holes |
+| `worker` | `sonnet` / medium | single-shot, tool-free writing or checking from a complete brief |
+
+These are Claude Code-only: like `.claude/rules/`, they are not mirrored, and Codex CLI
+reads nothing under `.claude/agents/`. Under Codex CLI, a step a skill hands to one of
+these agents runs inline in the main session instead.
+
 ## Security and human approval
 
 Only what is mechanically decidable is blocked at commit time; whether a commit
