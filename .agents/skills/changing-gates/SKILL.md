@@ -8,7 +8,7 @@ description: >
   SwiftLint rule is added, disabled, or loosened, a SwiftFormat option changes, a target
   is added to Package.swift, a tool pin is added or bumped, a pre-commit section or a CI
   job or step is proposed, the coverage floor is touched, or the question is which gate
-  would have caught a change — including what none of them sees.
+  would have caught a change - including what none of them sees.
 ---
 
 # Changing Gates

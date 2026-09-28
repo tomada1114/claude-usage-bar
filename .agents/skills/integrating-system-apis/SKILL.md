@@ -7,7 +7,7 @@ description: >
   hop; @preconcurrency import; non-Sendable CF types; teardown order. Use when adding a
   CGEventTap, an AXObserver or other Accessibility (AXUIElement) code, a Carbon
   RegisterEventHotKey hotkey, a CFRunLoop source, or any CGEvent work; when a TCC-gated
-  permission (Accessibility, Input Monitoring, Screen Recording) is involved —
+  permission (Accessibility, Input Monitoring, Screen Recording) is involved -
   AXIsProcessTrustedWithOptions, a prompt that never calls back, a grant lost on every
   rebuild; when "sending value of non-Sendable type" or a capturing C function pointer
   blocks the build; or when tempted by @unchecked Sendable or nonisolated(unsafe).

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/checks/skills-descriptions.sh` (run by `just check-harness`) fails on a
+  `SKILL.md` nested below a skill's top directory (`ERR_CHECK_SKILL_NESTED`), and on a
+  skill `description` over 1,024 characters, one containing a non-ASCII character, or
+  an unquoted frontmatter value Codex CLI's YAML parser rejects
+  (`ERR_CHECK_SKILL_DESCRIPTION`). The em-dashes in the `changing-gates`,
+  `integrating-system-apis`, `shipping-issues`, and `starting-an-app` descriptions are
+  now ASCII hyphens.
 - A `designing-core-logic` skill: how `MyAppCore` logic is shaped — time (`Clock`,
   an injected "now"), `Locale`, and a `RandomNumberGenerator` injected with a test
   substitute for each, tunables in one `Tuning` type, action-shaped `@Observable` view

@@ -4,8 +4,8 @@ description: >
   Covers turning this template into a new application with scripts/bootstrap.sh: its
   arguments, the placeholder literals it replaces across git-tracked files, re-running
   it safely, the leftover check, what the new repository keeps untouched, and choosing
-  the app's shape — a windowed app or a menu-bar agent (LSUIElement, MenuBarExtra, a
-  launch test with no window) — and whether it can stay sandboxed. Use when starting an
+  the app's shape - a windowed app or a menu-bar agent (LSUIElement, MenuBarExtra, a
+  launch test with no window) - and whether it can stay sandboxed. Use when starting an
   app from this repository, running or editing scripts/bootstrap.sh, a rename left a
   placeholder behind, filling in AGENTS.md's Product section (what the app is, its
   non-goals) or product-section-filled.sh failing,
