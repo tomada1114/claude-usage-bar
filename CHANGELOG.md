@@ -277,6 +277,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `.github/dependabot.yml` groups minor and patch updates per ecosystem (SwiftPM and
+  GitHub Actions), so one upstream release arrives as one PR; majors still get their
+  own PR, and the 7-day cooldown is unchanged.
 - `shipping-issues` is adapted to this template: its `SKILL.md` fits the
   `authoring-skills` 200-line budget (step detail moved to
   `references/implement-and-review.md` and `references/pr-ci-merge.md`), and the
