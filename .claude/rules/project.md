@@ -70,7 +70,10 @@ paths:
 
 - `.xcode-version` is the single source of truth for the CI Xcode pin (every macOS job
   derives `DEVELOPER_DIR` from it); CLI tools are pinned in `mise.toml`
-- Bump pins deliberately (roughly monthly), one commit per bump, after `just check` passes locally
-- Dependabot's `cooldown.default-days: 7` delays update PRs for SwiftPM and Actions; note that
+- Pin bumps arrive as bot PRs, never by hand: Dependabot (`.github/dependabot.yml`) for SwiftPM
+  and Actions, Renovate (`.github/renovate.json`, `enabledManagers: ["mise"]`) for `mise.toml`.
+  CI on the PR is the gate; merge when it is green
+- Both wait 7 days after a release (Dependabot's `cooldown.default-days`, Renovate's
+  `minimumReleaseAge`) before opening a PR, so a compromised fresh release has time to be pulled; note that
   SwiftPM itself has no resolver-level cooldown (unlike uv's `exclude-newer`), so fresh installs
   are only protected by the committed `Package.resolved`

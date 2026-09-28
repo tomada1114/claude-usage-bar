@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Renovate (`.github/renovate.json`) opens update PRs for `mise.toml`'s tool pins,
+  which Dependabot cannot see, with the same 7-day wait after a release
+  (`minimumReleaseAge`). It is limited to the `mise` manager; SwiftPM and Actions stay
+  with Dependabot. The Renovate GitHub App must be installed on the repository.
 - A Claude Code permission list in `.claude/settings.json`: the `just` recipes that
   read, build, or test, `swift build`/`swift test`, and read-only `gh` now run without
   a prompt, while everything that writes beyond the working tree — `just labels`,

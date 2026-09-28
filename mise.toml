@@ -1,5 +1,5 @@
 # Pinned CLI tool versions — the reproducibility analog of uv's lockfile for dev tools.
-# Bump deliberately (see .claude/rules/project.md), never use "latest".
+# Never use "latest": Renovate (.github/renovate.json) opens the bump PRs, 7 days after a release.
 [tools]
 xcodegen = "2.45.4"
 swiftlint = "0.65.0"
