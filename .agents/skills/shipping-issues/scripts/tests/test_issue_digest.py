@@ -776,6 +776,11 @@ class DigestCacheTest(DigestRunner, unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.state = Path(self._tmp.name)
+        # Pin the slug: repo_slug() reads `git remote get-url origin` in the cwd,
+        # so without this the cache tests depend on where the suite is run from.
+        slug = patch.object(idg, "repo_slug", return_value="example-owner/example-repo")
+        slug.start()
+        self.addCleanup(slug.stop)
 
     def _gh_fetches(self):
         return [c for c in self.gh_calls if c[:2] in (["issue", "list"], ["pr", "list"])]

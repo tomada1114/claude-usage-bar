@@ -7,10 +7,8 @@
 # The authored tree is tested, not the .claude/skills/ mirror: the two are byte-
 # identical (scripts/sync-agents.sh --check), and .agents/skills/ is the one edited.
 # PYTHONDONTWRITEBYTECODE=1 keeps __pycache__ out of that tree, and each case then
-# asserts none appeared, since a stray one would break the mirror check. The suite
-# runs with the checkout as its working directory, because issue_digest.py derives
-# its cache location from `git remote get-url origin` and its cache tests expect one;
-# every write the suite makes goes to its own temp directories.
+# asserts none appeared, since a stray one would break the mirror check. Every write
+# the suite makes goes to its own temp directories.
 #
 # python3 is assumed on PATH like git (not a mise tool). Its absence fails the file.
 set -euo pipefail
@@ -33,7 +31,6 @@ done
 run_suite() {
     local dir="${SUITE_DIR}"
     command -v python3 >/dev/null 2>&1 || _fail "python3 is not on PATH"
-    cd "${REPO_ROOT}"
     capture env PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s "${dir}" -t "${dir}" -p 'test_*.py'
     assert_exit 0
     assert_stderr_contains "OK"
