@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `AGENTS.md`'s "Security and human approval" now lists the concrete Swift and CI
+  forms of weakening a gate (`// swiftlint:disable`, `// swiftformat:disable`,
+  `@unchecked Sendable` / `nonisolated(unsafe)`, `.disabled`/`withKnownIssue`,
+  coverage excludes, loosened assertions, `continue-on-error`) and forbids re-spelling
+  a denied command (`git -C .`, `bash -c`, bundled flags): stop and ask instead.
 - An Architecture Decision Record tree for apps cut from the template:
   `docs/architecture/README.md` (the index, shipped empty, with the status legend and
   how an ADR changes) and `docs/architecture/adr/template.md`. `AGENTS.md`'s new

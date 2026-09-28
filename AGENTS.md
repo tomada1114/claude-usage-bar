@@ -253,7 +253,19 @@ of a check that enforces it.
   `.claude/rules/project.md`.
 - Weakening any gate: lowering the coverage floor, disabling or relaxing a SwiftLint
   rule, or widening a workflow's `permissions:`. If a gate looks wrong, say so and let
-  a human decide.
+  a human decide. In this repository that also means any of these, when used to make
+  a failing check pass:
+  - `// swiftlint:disable` (including `:next` and `:this`) or `// swiftformat:disable`,
+    or adding a path to `.swiftlint.yml`'s or `.swiftformat`'s excludes
+  - `@unchecked Sendable` or `nonisolated(unsafe)` to silence a concurrency diagnostic
+  - `.disabled(…)` or `withKnownIssue` on a failing test
+  - excluding a file or target from coverage (`scripts/coverage.sh`)
+  - deleting an assertion, or loosening one (`#expect`, `#require`) until it passes
+  - `continue-on-error` on a CI job or step, or `git commit --no-verify`
+- Working around a denied command. When a command is denied — by
+  `.claude/settings.json`, a hook, or a human — re-spelling it (`git -C . …`,
+  `bash -c '…'`, bundled short flags such as `-anm`, an alias or script wrapper) is
+  forbidden. Stop and ask.
 - Any write to a remote: `git push`, `gh pr create`, or any other remote write that
   is not performed by a script this repository ships. `scripts/sync-labels.sh`
   (`just labels`) is such a script for labels: it only ever creates or updates a
