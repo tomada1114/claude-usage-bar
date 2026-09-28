@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `blocked: external`, `on hold`, and `tracking` labels in `.github/labels.yml`,
+  defined in `triaging-issues`: an issue only a person can move forward, work parked
+  on purpose, and a tracking issue whose sub-issues carry the work. `shipping-issues`
+  skips the first two and now drops a `tracking` issue from ranking, selection, and
+  priority backfill.
+- `AGENTS.md` › Security and human approval records the standing exceptions:
+  invoking `smart-commit` (when asked to push), `create-pr`, or `shipping-issues` is
+  the sign-off for the remote writes that skill exists to make, and for nothing else
+  that section lists.
 - Renovate (`.github/renovate.json`) opens update PRs for `mise.toml`'s tool pins,
   which Dependabot cannot see, with the same 7-day wait after a release
   (`minimumReleaseAge`). It is limited to the `mise` manager; SwiftPM and Actions stay
@@ -255,6 +264,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `shipping-issues`' `ci_watch.sh` now enforces `--timeout` on stock macOS, which has
+  neither `timeout` nor `gtimeout`; the watch used to run unbounded there.
+- `shipping-issues`' Python scripts no longer write `__pycache__/` into the
+  `.claude/skills` mirror, which made `just agents-check` fail after a run.
+- `shipping-issues`' digest reads every issue number on a `Depends on #1, #2 and #3`
+  line, not only the first.
 - `scripts/tests/apply-ruleset_test.sh` built its `gh` stub bodies with a heredoc inside
   a command substitution, which bash 3.2 parses wrongly at the first `)` of a `case` pattern:
   under macOS `/bin/bash` the file died with a syntax error and still exited 0, so none

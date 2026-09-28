@@ -3,11 +3,12 @@ name: triaging-issues
 description: >
   Covers this repository's issue vocabulary: the type, priority, and blocked label
   taxonomy declared in .github/labels.yml and synced by `just labels`, what
-  `blocked: design` and `blocked: dependency` mean, and what an issue body must contain
-  (a `path:line`, an observable close condition, a `Depends on #N` line). Use when filing
-  a GitHub issue, triaging or re-prioritizing the backlog, picking a `priority: P0`-`P3`
-  label, choosing between `bug`/`enhancement`/`documentation`/`chore`, editing
-  .github/labels.yml or an issue form, or running `just labels`.
+  `blocked: design`, `blocked: dependency`, `blocked: external`, `on hold` and
+  `tracking` mean, and what an issue body must contain (a `path:line`, an observable
+  close condition, a `Depends on #N` line). Use when filing a GitHub issue, triaging
+  or re-prioritizing the backlog, picking a `priority: P0`-`P3` label, choosing
+  between `bug`/`enhancement`/`documentation`/`chore`, marking a tracking issue,
+  editing .github/labels.yml or an issue form, or running `just labels`.
 ---
 
 # Triaging Issues
@@ -30,6 +31,8 @@ left untiered; triage adds the priority, and a `blocked:` label where one applie
 | `priority: P3` | Defer only when impact is genuinely low — nobody is waiting on it and no future issue depends on it. Not a stand-in for "I don't want to do this"; an issue that matters but is unappealing to implement belongs at its real tier. |
 | `blocked: design` | Applies when the approach has real, unresolved alternatives a human must choose between — not simply that no one has looked at it yet. It still gets a priority tier (see below); readiness and priority are independent judgments. |
 | `blocked: dependency` | Applies only alongside a `Depends on #N` line in the body (see Ordering constraints below) — the label without a named blocker can't be verified or cleared. |
+| `blocked: external` | Applies when the next step is one only a person can take: a signing identity or notarization credential, an Apple Developer account step, a purchase or accepting terms, a TCC grant in System Settings. Not for anything an agent can do with its own tools. `shipping-issues` never picks such an issue. |
+| `on hold` | Applies to work parked on purpose, with the reason in a comment: real work nobody should pick up yet. It keeps its priority tier. `shipping-issues` never picks it. Not for a tracking issue — that is `tracking`. |
 
 Priority ranks impact on the rest of the backlog, not how interesting the work is. Do
 not tier an issue by how appealing it is to implement.
@@ -60,7 +63,13 @@ There is no `security` label. A vulnerability is never filed as a public issue: 
 through `SECURITY.md`'s private reporting route (GitHub Security Advisories), which the
 issue chooser's `config.yml` also links to.
 
-`chore`, `ci`, and the `priority:`/`blocked:` labels are not GitHub defaults, and GitHub
+`tracking` marks a tracking issue: a checklist of sub-issues (`- [ ] #N`) whose own
+body is never implemented. It takes a type label (usually `chore`) and no priority
+tier, because it ranks nothing; each sub-issue carries its own tier and says
+`Part of #N`. `shipping-issues` drops a `tracking` issue from ranking, selection, and
+priority backfill, so it never has to be judged again on each run.
+
+`chore`, `ci`, `tracking`, and the `priority:`/`blocked:` labels are not GitHub defaults, and GitHub
 silently drops a label a form applies when the repository does not have it. `just labels`
 (`scripts/sync-labels.sh`) creates or updates every label in `.github/labels.yml` on the
 live repository and never deletes one; running it is a remote write that needs a human's

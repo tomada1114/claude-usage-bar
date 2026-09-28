@@ -71,6 +71,7 @@ phrasings. These edges only appear on reading:
   as one issue.
 - **Umbrella issues** — an epic listing `- [ ] #12 #13 #14` is not itself
   implementable. Treat it as a container: ship the children, leave the epic.
+  A `tracking` (or `epic`) label makes `issue_digest.py` drop it mechanically.
 
 When two issues could reasonably go either order, prefer the one that is
 smaller and touches fewer files first — it shortens the window in which the

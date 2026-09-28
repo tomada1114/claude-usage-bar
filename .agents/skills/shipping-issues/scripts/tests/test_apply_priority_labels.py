@@ -557,5 +557,26 @@ class BackfillHonoursTheContractTest(unittest.TestCase):
         self.assertEqual(rows[0]["why"], "explicit")
 
 
+class NoBytecodeTest(unittest.TestCase):
+    """Run from the .claude/skills mirror, a sibling import would leave
+    __pycache__/ beside the scripts, which `just agents-check` reports as
+    drift and shipping-issues itself treats as a dirty tree."""
+
+    def test_scripts_with_a_sibling_import_write_no_bytecode(self):
+        import os
+        import shutil
+        import tempfile
+        scripts = Path(__file__).resolve().parent.parent
+        env = {k: v for k, v in os.environ.items()
+               if k != "PYTHONDONTWRITEBYTECODE"}
+        for name in ("apply_priority_labels.py", "file_followup.py"):
+            with self.subTest(script=name), tempfile.TemporaryDirectory() as td:
+                for f in scripts.glob("*.py"):
+                    shutil.copy(f, td)
+                subprocess.run([sys.executable, str(Path(td) / name), "--help"],
+                               env=env, capture_output=True, check=True)
+                self.assertEqual(list(Path(td).rglob("__pycache__")), [])
+
+
 if __name__ == "__main__":
     unittest.main()

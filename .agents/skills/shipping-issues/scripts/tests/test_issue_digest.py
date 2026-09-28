@@ -81,6 +81,18 @@ class ExtractDepsTest(unittest.TestCase):
         deps = idg.extract_deps("blocked by #5", "t", self_number=1)
         self.assertEqual(deps["depends_on"], [5])
 
+    def test_comma_separated_list_yields_every_number(self):
+        deps = idg.extract_deps("Depends on: #1, #2", "t", self_number=9)
+        self.assertEqual(deps["depends_on"], [1, 2])
+
+    def test_and_separated_list_yields_every_number(self):
+        deps = idg.extract_deps("Depends on: #1 and #2", "t", self_number=9)
+        self.assertEqual(deps["depends_on"], [1, 2])
+
+    def test_mixed_list_after_blocked_by_and_requires(self):
+        deps = idg.extract_deps("Blocked by: #3, #4, and #5\nRequires: #6 and #7", "t", self_number=9)
+        self.assertEqual(deps["depends_on"], [3, 4, 5, 6, 7])
+
     def test_blocks_pattern(self):
         deps = idg.extract_deps("this blocks #9", "t", self_number=1)
         self.assertEqual(deps["blocks"], [9])
@@ -391,6 +403,26 @@ class MainEndToEndTest(DigestRunner, unittest.TestCase):
         payload = json.loads(out)
         self.assertEqual(payload["ranking"][0]["number"], 2)
         self.assertEqual(payload["ranking"][0]["tier"], "P0")
+
+    def test_tracking_issue_is_never_ranked_selected_or_offered_a_tier(self):
+        issues = [
+            gh_issue(96, title="back-port harness (tracking)", labels=["tracking"],
+                     body="- [ ] #97\n- [ ] #98"),
+            gh_issue(97, title="the work", labels=["priority: P2"]),
+            gh_issue(98, title="untiered work"),
+        ]
+        rc, out, err = self._run(["--select", "--json"], issues)
+        self.assertEqual(rc, 0, err)
+        payload = json.loads(out)
+        self.assertEqual(payload["tracking_issues"], [96])
+        self.assertNotIn(96, [r["number"] for r in payload["ranking"]])
+        self.assertNotIn(96, [r["number"] for r in payload["issues"]])
+        self.assertEqual(payload["label_coverage"]["unlabeled"], [98])
+
+        rc, out, err = self._run(["--select"], issues)
+        self.assertEqual(rc, 0, err)
+        self.assertIn("select: #97", out)
+        self.assertIn("tracking: #96", out)
 
     def test_select_text_output_names_the_pick(self):
         issues = [gh_issue(2, title="ship now", labels=["priority: P0"])]

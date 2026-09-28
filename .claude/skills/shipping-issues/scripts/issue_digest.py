@@ -73,10 +73,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-# Dependency phrasings seen in real issue bodies, EN + JA.
+# Dependency phrasings seen in real issue bodies, EN + JA. Group 1 of a leading
+# phrase is a list ("#1, #2 and #3"); every number in it is read.
+_REF_LIST = r"(#\d+(?:(?:\s*,\s*(?:and\s+)?|\s+and\s+)#\d+)*)"
 DEP_PATTERNS = [
-    (r"(?:depends?\s+on|blocked\s+by|after|requires?)\s*:?\s*#(\d+)", "depends_on"),
-    (r"(?:blocks|blocking)\s*:?\s*#(\d+)", "blocks"),
+    (r"(?:depends?\s+on|blocked\s+by|after|requires?)\s*:?\s*" + _REF_LIST, "depends_on"),
+    (r"(?:blocks|blocking)\s*:?\s*" + _REF_LIST, "blocks"),
     (r"#(\d+)\s*(?:に依存|の後|完了後|がマージされてから|の続き)", "depends_on"),
     (r"(?:前提|依存|ブロッカー|先行)\s*:?\s*#(\d+)", "depends_on"),
     (r"#(\d+)\s*(?:をブロック|の前提)", "blocks"),
@@ -202,6 +204,12 @@ DEPENDENCY_BLOCK_LABELS = {
     ("blocked: dependency", "blocked-by-dependency", "blocked: dependencies",
      "waiting on dependency")
 }
+
+# A tracking issue is a checklist of sub-issues, never work in itself. Unlike
+# READY_NEGATIVE_LABELS (which still ranks and tiers the issue, only holds it),
+# an issue carrying one of these is dropped from the records entirely: it is
+# never ranked, never selected, and never offered a priority tier to backfill.
+TRACKING_LABELS = {normalize_label(n) for n in ("tracking", "epic")}
 
 
 def resolve_design_label(existing: list[str]) -> tuple[str, bool]:
@@ -436,9 +444,10 @@ def extract_deps(body: str, title: str, self_number: int) -> dict[str, list[int]
     deps: dict[str, set[int]] = {"depends_on": set(), "blocks": set(), "mentions": set()}
     for pattern, kind in DEP_PATTERNS:
         for m in re.finditer(pattern, haystack, re.IGNORECASE):
-            n = int(m.group(1))
-            if n != self_number:
-                deps[kind].add(n)
+            for ref in re.findall(r"\d+", m.group(1)):
+                n = int(ref)
+                if n != self_number:
+                    deps[kind].add(n)
     for m in BARE_REF_RE.finditer(haystack):
         n = int(m.group(1))
         if n != self_number and n not in deps["depends_on"] and n not in deps["blocks"]:
@@ -702,11 +711,15 @@ def main() -> int:
 
     wanted = set(args.issue)
     records = []
+    tracking = []
     for it in issues:
         num = it["number"]
         if wanted and num not in wanted:
             continue
         labels = [lbl["name"] for lbl in it.get("labels", [])]
+        if any(normalize_label(lbl) in TRACKING_LABELS for lbl in labels):
+            tracking.append(num)
+            continue
         body = it.get("body") or ""
         deps = all_deps[num]
         blockers = [lbl for lbl in labels
@@ -796,6 +809,7 @@ def main() -> int:
     stale_dependency = [r for r in records if r["stale_dependency_labels"]]
     payload = {
         "open_issue_count": len(records),
+        "tracking_issues": sorted(tracking),
         "open_pr_count": len(prs),
         "cache": cache_status,
         "label_coverage": {
@@ -957,6 +971,9 @@ def main() -> int:
                   f"(score {r['priority_score']} · {' · '.join(r['score_reasons']) or '—'})")
         if not picks:
             print("select: none — no READY issue matches the filter")
+        if tracking:
+            print("tracking: " + ", ".join(f"#{n}" for n in sorted(tracking))
+                  + " — tracking issues; ship their sub-issues")
         # Design-not-settled issues get their own line, not buried in `held:`
         # with dependency/label blocks — the reason to unblock them is
         # different (decide the design, not wait on something else).

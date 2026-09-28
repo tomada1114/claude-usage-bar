@@ -262,6 +262,51 @@ class CiWatchTest(unittest.TestCase):
         # fake gh: our stub `timeout` never execs its wrapped command.
         self.assertEqual([c for c in calls if "--watch" in c], [])
 
+    def test_watch_timeout_is_enforced_without_a_timeout_binary(self):
+        # Stock macOS has neither `timeout` nor `gtimeout`, so the script
+        # must bound the watch itself. The PATH here is a copy of the host's
+        # with both names left out, and `gh pr checks --watch` never settles.
+        pr = "23"
+        with tempfile.TemporaryDirectory() as td, \
+                FakeGh({ROLLUP(pr): "1\n", STATE(pr): STATE_JSON}) as fake:
+            tools = Path(td) / "tools"
+            tools.mkdir()
+            for entry in fake.env["PATH"].split(os.pathsep):
+                if not entry or not Path(entry).is_dir():
+                    continue
+                for tool in Path(entry).iterdir():
+                    link = tools / tool.name
+                    if tool.name in ("timeout", "gtimeout", "gh") \
+                            or link.exists() or link.is_symlink():
+                        continue
+                    try:
+                        runnable = tool.is_file() and os.access(tool, os.X_OK)
+                    except OSError:  # an unreadable system binary
+                        continue
+                    if runnable:
+                        link.symlink_to(tool)
+            fake_gh = fake.env["PATH"].split(os.pathsep)[0] + "/gh"
+            install_stub(tools, "gh", f"""#!/usr/bin/env bash
+for arg in "$@"; do
+  [[ "$arg" == "--watch" ]] && exec sleep 30
+done
+exec "{fake_gh}" "$@"
+""")
+            env = dict(fake.env)
+            env["PATH"] = str(tools)
+            proc = subprocess.run(
+                ["bash", str(SCRIPT), pr, "--timeout", "2"],
+                env=env,
+                text=True,
+                capture_output=True,
+                timeout=20,
+            )
+
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("verdict: TIMEOUT\n", proc.stdout)
+        self.assertIn("waited_seconds: 2\n", proc.stdout)
+        self.assertIn("timeout_enforced: shell", proc.stderr)
+
     def test_terminal_pass_reports_state_on_first_poll(self):
         pr = "17"
         rollup = ("pr", "view", pr, "--json", "statusCheckRollup")

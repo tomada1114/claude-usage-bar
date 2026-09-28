@@ -222,6 +222,22 @@ of a check that enforces it.
   needs repository admin permissions to succeed, and still needs sign-off before
   its first run against the live repository.
 
+Standing exceptions: invoking one of these skills is the sign-off for the remote
+writes that skill exists to make, for that invocation only.
+
+- `smart-commit`, when asked to push: pushing the commits it made to the current
+  branch.
+- `create-pr`: pushing the current branch and creating or updating its pull request.
+- `shipping-issues`: the writes its `SKILL.md` lists — priority and `blocked:` labels
+  on open issues, branches and pushes, the pull request, merging it once CI passes,
+  the follow-up issues and comments it files, and removing the branches and worktrees
+  it created.
+
+None of them covers anything else in the list above: a force push or other history
+rewrite, `--no-verify`, weakening a gate, entitlements or signing, a release tag, a
+new dependency, `just labels`, or `just ruleset`. A skill that reaches one of those
+stops and asks.
+
 ## Repository scripts
 
 Every script under `scripts/` follows these rules, whoever writes it

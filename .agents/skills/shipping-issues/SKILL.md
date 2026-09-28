@@ -19,7 +19,10 @@ CLOSED, and nothing was deleted or weakened to get there.
 
 **Invoking this skill is the authorization for every write it makes, up to and
 including the merge** — labels, branches, pushes, the PR, follow-up issues,
-step 8b's design comments, cleanup. Green CI is the go-ahead: as soon as
+step 8b's design comments, cleanup. This is a standing exception `AGENTS.md`'s
+"Security and human approval" records, and it covers nothing else that section
+lists: a gate change, entitlements or signing, a new dependency, `just labels` or
+`just ruleset` is a [stop condition](#stop-conditions). Green CI is the go-ahead: as soon as
 [step 6](#6-ci-to-green) reports `PASS`, the merge happens in the same turn,
 with no "shall I merge?" and no summary-then-wait. Re-confirming per issue
 defeats `all` mode entirely. The only pauses are the
@@ -509,8 +512,11 @@ that last one is what the user actually has to answer.
 ## Stop conditions
 
 Stop the whole run and report when: the plan is `BLOCKED`, a dependency cycle
-needs a human to break it, a merge conflict needs a product decision, or the same
-CI failure survives the retry ceiling on two different issues.
+needs a human to break it, a merge conflict needs a product decision, the same
+CI failure survives the retry ceiling on two different issues, or the fix needs a
+write `AGENTS.md`'s "Security and human approval" keeps outside this skill's
+standing exception (a gate change, entitlements or signing, a new dependency,
+`just labels`, `just ruleset`).
 
 Also stop on **a change in the repository that this run did not make** — the main
 checkout dirty with files no step here touched, a branch moved underneath you,
