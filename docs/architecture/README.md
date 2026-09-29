@@ -23,8 +23,7 @@ Three places hold the reasoning, and each has one job:
 Beside the ADRs, [`roadmap.md`](roadmap.md) records the app's direction — which outcomes
 come now, next, and later — and links the issues and ADRs each one needs. It is not an
 ADR: it takes no status and no number, has no row in the table below, and authorizes
-nothing. The template ships it as a skeleton; `steering-the-roadmap` is the skill that
-changes it.
+nothing. `steering-the-roadmap` is the skill that changes it.
 
 ## Status legend
 
@@ -56,8 +55,8 @@ changes it.
 
 ## Decisions
 
-The template ships this table empty: its own reasoning is in the repository README's
-Design Philosophy. The first row is the app's first ADR.
-
 | ADR | Decision | Status |
 |---|---|---|
+| [0001](adr/0001-app-shape.md) | A menu-bar agent with a native menu | Proposed |
+| [0002](adr/0002-sandbox-posture.md) | Run without the App Sandbox | Proposed |
+| [0003](adr/0003-usage-data-source.md) | Usage from Claude Code's keychain token and the OAuth usage endpoint | Proposed |
