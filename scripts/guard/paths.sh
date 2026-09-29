@@ -14,7 +14,10 @@
 #   - `.cer` and `.certSigningRequest`: a public certificate and a signing request
 #     hold no private key;
 #   - `.key`: the extension collides with Keynote documents;
-#   - `.env.example`, `.env.sample`, `.env.template`: committed, secret-free samples;
+#   - `.env.example`, `.env.sample`, `.env.template` (and the same `.envrc.*`
+#     samples): committed, secret-free samples;
+#   - a bare `.envrc`: direnv projects commit it on purpose; only `.envrc.*`
+#     variants, which by convention hold per-machine values, are refused;
 #   - a regenerated file such as `Package.resolved`: committing one is normal, and
 #     whether it was hand-edited is not something a path can tell;
 #   - every xcconfig but `Local.xcconfig`: `Config/Debug.xcconfig` is committed on
@@ -42,7 +45,21 @@ is_blocked_path() {
             ;;
     esac
 
+    case "${path}" in
+        .claude/settings.local.json | */.claude/settings.local.json)
+            BLOCKED_REASON="Claude Code's local settings are per-user, gitignored, and can widen an agent's own permissions"
+            return 0
+            ;;
+    esac
+
     case "${lower}" in
+        .envrc.*)
+            case "${lower}" in
+                *.example | *.sample | *.template) return 1 ;;
+            esac
+            BLOCKED_REASON="a direnv variant file (\`.envrc.*\`) can hold real values"
+            return 0
+            ;;
         .env | .env.*)
             case "${lower}" in
                 *.example | *.sample | *.template) return 1 ;;

@@ -49,6 +49,22 @@ case_env_samples_allowed() {
     expect_allowed .env.example .env.sample .env.template App/.env.local.example
 }
 
+case_envrc_variants_blocked() {
+    expect_blocked .envrc.local .envrc.private App/.envrc.dev .ENVRC.Local
+}
+
+case_envrc_and_samples_allowed() {
+    expect_allowed .envrc App/.envrc .envrc.example .envrc.sample .envrc.template .envrcfile
+}
+
+case_claude_local_settings_blocked() {
+    expect_blocked .claude/settings.local.json sub/project/.claude/settings.local.json
+}
+
+case_claude_shared_settings_allowed() {
+    expect_allowed .claude/settings.json settings.local.json docs/claude/settings.local.json
+}
+
 case_secrets_segment_blocked() {
     expect_blocked secrets/token.txt App/secrets/config.plist secrets
 }
@@ -85,6 +101,10 @@ case_public_and_ordinary_files_allowed() {
 
 run_case "every .env and .env.* is blocked" case_env_files_blocked
 run_case ".env.example, .env.sample, .env.template are allowed" case_env_samples_allowed
+run_case ".envrc.* variants are blocked" case_envrc_variants_blocked
+run_case "a bare .envrc and .envrc.* samples are allowed" case_envrc_and_samples_allowed
+run_case ".claude/settings.local.json is blocked in any directory" case_claude_local_settings_blocked
+run_case ".claude/settings.json and other settings.local.json paths are allowed" case_claude_shared_settings_allowed
 run_case "a path with a secrets segment is blocked" case_secrets_segment_blocked
 run_case "secrets as a substring of a segment is allowed" case_secrets_substring_allowed
 run_case "p12, pfx, p8, provisioning profiles, and keychains are blocked" case_signing_material_blocked

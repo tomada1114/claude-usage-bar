@@ -20,11 +20,26 @@
 # sequence that is not valid in the caller's locale cannot make it error or skip.
 # -E with a `{n,}` bound and -a behave the same in BSD grep (macOS) and GNU grep.
 
+# Each shape is anchored on its documented prefix plus a minimum length, so prose
+# that merely names a prefix passes. Deliberately NOT matched: Stripe test keys
+# (`sk_test_`/`rk_test_` reach only test mode, so they are not worth a refusal), and
+# a bare 40-character AWS secret access key — base64 of that length is too common
+# on its own, so it counts only right after an `aws_secret_access_key` or
+# `AWS_SECRET_ACCESS_KEY` assignment (`=` or `:`).
+#
 # CREDENTIAL_PATTERNS — one "category<TAB>extended regex" per line, checked in order.
 CREDENTIAL_PATTERNS='private-key	-----BEGIN ([A-Z]+ )*PRIVATE KEY-----
 github-token	gh[pousr]_[A-Za-z0-9]{36,}
 github-token	github_pat_[A-Za-z0-9_]{22,}
-aws-access-key-id	(AKIA|ASIA)[A-Z0-9]{16}'
+aws-access-key-id	(AKIA|ASIA)[A-Z0-9]{16}
+aws-secret-access-key	(aws_secret_access_key|AWS_SECRET_ACCESS_KEY)[^:=]{0,3}[:=][^A-Za-z0-9/+]{0,3}[A-Za-z0-9/+]{40}
+anthropic-key	sk-ant-[A-Za-z0-9_-]{32,}
+openai-key	sk-(proj|svcacct|admin)-[A-Za-z0-9_-]{40,}
+openai-key	sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}
+slack-token	xox[abprs]-[0-9]{8,}-[A-Za-z0-9-]{8,}
+google-api-key	AIza[0-9A-Za-z_-]{35}
+stripe-live-key	(sk|rk)_live_[0-9A-Za-z]{24,}
+jwt	eyJ[A-Za-z0-9_-]{10,}[.]eyJ[A-Za-z0-9_-]{10,}[.][A-Za-z0-9_-]{10,}'
 
 # credential_category FILE — prints the first matching category name (never the
 # matched text) and returns 0 when FILE holds credential-shaped content; returns 1

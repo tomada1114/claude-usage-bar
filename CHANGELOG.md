@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The commit-time staged guard now also refuses `.envrc.*` (samples excepted) and
+  `.claude/settings.local.json` by path, and Anthropic, OpenAI, Slack, Google API,
+  Stripe live (`sk_live_`/`rk_live_`; test keys stay allowed) and JWT shapes, plus an
+  AWS secret access key assigned to its variable name, by content.
+
 - `authoring-skills` records where a skill lives: in `.agents/skills/` by default,
   never a committed plugin marketplace, and when a ref-pinned shared plugin is allowed.
 
