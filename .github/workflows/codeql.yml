@@ -10,6 +10,13 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    # `bash` runs as `bash --noprofile --norc -eo pipefail {0}`; an unnamed shell is
+    # `bash -e {0}`, which misses a failure before a `|`
+    # (scripts/checks/workflow-hygiene.sh).
+    shell: bash
+
 jobs:
   analyze:
     name: Analyze Swift

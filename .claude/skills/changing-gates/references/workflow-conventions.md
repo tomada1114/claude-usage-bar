@@ -8,7 +8,20 @@ the `zizmor` job partly check and review holds for the rest:
 - every `uses:` of a remote action is pinned to a full commit SHA with a trailing
   `# vX.Y.Z` comment; a local `./.github/actions/…` action is exempt;
 - a top-level `permissions:` as narrow as the work allows, and every job has a
-  `timeout-minutes`;
+  `timeout-minutes`; a `write` scope goes on the job that needs it, never the top
+  level, and neither level uses `read-all`/`write-all`;
+- a workflow triggered on `pull_request` declares a top-level `concurrency:` whose group
+  varies per run and names `github.workflow` (or is otherwise unique to the file) — a
+  pull-request-only key such as `github.head_ref` is empty on any other trigger, so a
+  workflow with one keys on `github.ref`, `github.sha`, or a `|| github.run_id`
+  fallback — and a workflow triggered on `push` never cancels a push run in progress — ci.yml's
+  `cancel-in-progress: ${{ github.event_name == 'pull_request' }}` is the pattern;
+- every `run:` step runs under `shell: bash`, which GitHub runs with `-eo pipefail`,
+  or opens with `set -euo pipefail`; an unnamed shell is `bash -e {0}`, which misses a
+  failure before a `|`. Name it with a top-level `defaults:` block written in block
+  style — `defaults:`, then `  run:`, then `    shell: bash`, one key per line, since
+  the harness check does not read a flow mapping — and a composite action's step
+  names `shell: bash` itself;
 - `actions/checkout` runs with `persist-credentials: false`;
 - a new check goes into an existing job unless it needs a different runner, trigger, or
   permission footprint. Widening `permissions:` or adding a workflow that writes is a
@@ -18,6 +31,13 @@ the `zizmor` job partly check and review holds for the rest:
   same change; `scripts/checks/ruleset-contexts.sh` (`just check-harness`) fails while a
   required context matches no job in a `pull_request` workflow, and `just ruleset` then
   pushes the edited ruleset to the live repository (sign-off first).
+
+`just check-harness` holds the mechanical part of this list:
+`scripts/checks/workflow-pins-and-permissions.sh` the pins and the presence of a
+top-level `permissions:`, `scripts/checks/workflow-hygiene.sh` the write-scope,
+concurrency, and shell rules, `scripts/checks/ruleset-contexts.sh` the job names, and
+`scripts/checks/dependency-bots-agree.sh` that Dependabot's and Renovate's commit
+prefixes are types `check-pr-title.yml` accepts and their cooldowns agree.
 
 ## The gitleaks pin
 

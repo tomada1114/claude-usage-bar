@@ -6,6 +6,11 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # A newer push to the pull request supersedes the run in progress.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   dependency-review:
     name: Dependency Review

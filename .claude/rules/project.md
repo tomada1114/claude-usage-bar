@@ -90,4 +90,6 @@ paths:
   `docs/getting-started.md`'s Xcode requirement in step, and let the PR's macOS jobs
   prove the path exists
 - `.github/workflows/check-pr-title.yml` accepts the bots' prefixes (`deps`, `ci`); a
-  prefix change in either bot config changes that list in the same PR
+  prefix change in either bot config changes that list in the same PR.
+  `scripts/checks/dependency-bots-agree.sh` (`just check-harness`) fails while a bot's
+  prefix is missing or not a listed type, or the two bots' cooldowns disagree

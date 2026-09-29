@@ -8,14 +8,27 @@ on:
       - edited
       - synchronize
 
-permissions:
-  pull-requests: write
+permissions: {}
+
+concurrency:
+  # A newer push or title edit supersedes the run in progress.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    # `bash` runs as `bash --noprofile --norc -eo pipefail {0}`; an unnamed shell is
+    # `bash -e {0}`, which misses a failure before a `|`
+    # (scripts/checks/workflow-hygiene.sh).
+    shell: bash
 
 jobs:
   label:
     name: Label by Conventional Commit type
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      pull-requests: write
     steps:
       # The base SHA, never the PR head: a pull request cannot change the script
       # that runs with this job's write token.

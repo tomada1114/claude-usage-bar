@@ -15,6 +15,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+defaults:
+  run:
+    # `bash` runs as `bash --noprofile --norc -eo pipefail {0}`; an unnamed shell is
+    # `bash -e {0}`, which misses a failure before a `|`
+    # (scripts/checks/workflow-hygiene.sh).
+    shell: bash
+
 jobs:
   lint:
     name: Lint & Format Check

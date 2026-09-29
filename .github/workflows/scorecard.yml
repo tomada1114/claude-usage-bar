@@ -5,7 +5,9 @@ on:
     - cron: "30 1 * * 6"
   workflow_dispatch:
 
-permissions: read-all
+# The analysis job declares every scope it needs; nothing else runs here.
+permissions:
+  contents: read
 
 jobs:
   analysis:

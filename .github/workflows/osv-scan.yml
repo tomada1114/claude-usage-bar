@@ -9,6 +9,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  # A superseded pull request run is cancelled; a scheduled or manual scan finishes.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    # `bash` runs as `bash --noprofile --norc -eo pipefail {0}`; an unnamed shell is
+    # `bash -e {0}`, which misses a failure before a `|`
+    # (scripts/checks/workflow-hygiene.sh).
+    shell: bash
+
 jobs:
   scan:
     name: Scan dependencies for known vulnerabilities

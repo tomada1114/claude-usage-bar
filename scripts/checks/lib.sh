@@ -8,6 +8,8 @@
 #   check_problem "AGENTS.md:12: ..."               # collect, do not stop
 #   check_report ERR_CHECK_X "what failed" "expected" "next"
 #   check_finish "x: ok"
+#   check_yaml_flatten .github/workflows/ci.yml     # `<line>\t<path>\t<value>` rows
+#   rows=$(check_read "ci.yml" some_reader ci.yml)  # a reader failure -> ERR_CHECK_READ_FAILED
 #
 # Every check reads files under CHECK_ROOT and nothing else. CHECK_ROOT is the
 # --root DIR argument when given (tests point it at a fixture tree), otherwise the
@@ -17,6 +19,7 @@
 # Errors raised here (each followed by Expected:/Actual:/Next: lines):
 #   ERR_CHECK_USAGE          unknown argument, or a --root DIR that does not exist (exit 1 now)
 #   ERR_CHECK_INPUT_MISSING  a file or directory the check reads is absent (exit 1 now)
+#   ERR_CHECK_READ_FAILED    a reader run through check_read exited non-zero (exit 1 now)
 # A check's own codes are reported through check_report, which lets the check keep
 # going; check_finish then exits 1 if anything was reported.
 
@@ -102,4 +105,119 @@ check_finish() {
         exit 1
     fi
     echo "$1"
+}
+
+# check_yaml_flatten FILE — prints one tab-separated `<line>\t<path>\t<value>` row per
+# mapping key and list item of the YAML file FILE, so a check can ask "what is at
+# jobs.lint.steps.2.run" with awk instead of re-deriving indentation itself.
+#   - path: the keys from the document root joined with `.`, a list item counting as
+#     its 0-based index (`jobs.lint.steps.0.uses`, `on.pull_request`, `updates.1`).
+#   - value: the inline value, with one pair of surrounding quotes removed or else a
+#     trailing ` # comment` dropped; empty for a key whose value is a nested block.
+#   - a `|`/`>` block scalar prints its indicator as the value, then one row per
+#     non-blank content line at `<path>.|`, leading whitespace stripped.
+# It is a line-based reader for the block-style YAML GitHub workflows and bot configs
+# use, not a YAML parser: anchors, tags, a flow collection spread over several lines
+# (its continuation lines are skipped), and a quoted value holding an escaped quote
+# are not understood.
+check_yaml_flatten() {
+    awk '
+        function ind(s) { match(s, /^ */); return RLENGTH }
+        function clean(v,    e) {
+            sub(/^[[:space:]]+/, "", v)
+            if (v ~ /^"/) { e = index(substr(v, 2), "\""); if (e > 0) return substr(v, 2, e - 1) }
+            if (v ~ /^\047/) { e = index(substr(v, 2), "\047"); if (e > 0) return substr(v, 2, e - 1) }
+            sub(/(^|[[:space:]]+)#.*$/, "", v); sub(/[[:space:]]+$/, "", v)
+            return v
+        }
+        # keylen(s) — the length of the mapping key s starts with (quotes included),
+        # or 0 when s is not `key:` followed by a space or the end of the line.
+        function keylen(s,    q, e) {
+            q = substr(s, 1, 1)
+            if (q == "\"" || q == "\047") {
+                e = index(substr(s, 2), q)
+                if (e == 0) return 0
+                e = e + 1
+            } else {
+                if (!match(s, /^[^[:space:]#][^:]*:/)) return 0
+                e = RLENGTH - 1
+            }
+            if (substr(s, e + 1, 1) != ":") return 0
+            if (e + 1 < length(s) && substr(s, e + 2, 1) !~ /[[:space:]]/) return 0
+            return e
+        }
+        function path(    p, i) {
+            p = ""
+            for (i = 1; i <= sp; i++) p = (i == 1 ? sname[i] : p "." sname[i])
+            return p
+        }
+        BEGIN { sp = 0; inblock = 0; contcol = -1 }
+        {
+            line = $0
+            sub(/\r$/, "", line)
+            if (inblock) {
+                if (line ~ /^[[:space:]]*$/) next
+                if (ind(line) > blockcol) {
+                    sub(/^[[:space:]]+/, "", line)
+                    print NR "\t" blockpath ".|\t" line
+                    next
+                }
+                inblock = 0
+            }
+            if (line ~ /^[[:space:]]*(#.*)?$/) next
+            if (line ~ /^(---|\.\.\.)([[:space:]]|$)/) next
+            c = ind(line)
+            rest = substr(line, c + 1)
+            # A plain or flow value continued on a deeper line is not structure.
+            if (contcol >= 0 && c > contcol) next
+            contcol = -1
+            while (rest ~ /^-([[:space:]]|$)/) {
+                while (sp > 0 && (scol[sp] > c || (scol[sp] == c && sitem[sp]))) sp--
+                parent = path()
+                sp++; scol[sp] = c; sitem[sp] = 1; sname[sp] = count[parent]++
+                rest = substr(rest, 2)
+                m = ind(rest)
+                c = c + 1 + m
+                rest = substr(rest, m + 1)
+                if (rest == "") { print NR "\t" path() "\t"; next }
+            }
+            klen = keylen(rest)
+            if (klen > 0) {
+                key = substr(rest, 1, klen)
+                val = substr(rest, klen + 2)
+                if (key ~ /^"/ || key ~ /^\047/) key = substr(key, 2, length(key) - 2)
+                while (sp > 0 && scol[sp] >= c) sp--
+                sp++; scol[sp] = c; sitem[sp] = 0; sname[sp] = key
+                v = clean(val)
+                print NR "\t" path() "\t" v
+                if (v ~ /^[|>][-+0-9]*$/) { inblock = 1; blockcol = c; blockpath = path() }
+                else if (v != "") contcol = c
+                next
+            }
+            # A scalar list item (`- ubuntu-latest`), or a line this reader does not model.
+            if (sp > 0 && sitem[sp] && scol[sp] < c) {
+                print NR "\t" path() "\t" clean(rest)
+                contcol = scol[sp]
+            }
+        }
+    ' "$1"
+}
+
+# check_read REL CMD... — runs CMD, a reader of the file REL, and prints its stdout.
+# If CMD exits non-zero it fails now with ERR_CHECK_READ_FAILED and CMD's first stderr
+# line, so an awk or sed error surfaces under the failure contract instead of as a
+# bare message. Call it inside `$(…)`: the failure exits that subshell, and the
+# assignment's non-zero status then stops the check under `set -e`.
+check_read() {
+    local rel="$1" out status=0 message
+    shift
+    out=$("$@" 2>/dev/null) || status=$?
+    if [ "${status}" -ne 0 ]; then
+        message=$("$@" 2>&1 >/dev/null | head -n 1) || true
+        check_fail ERR_CHECK_READ_FAILED "could not read ${rel}" \
+            "the reader of ${rel} to exit 0" \
+            "exit ${status}: ${message:-no message}" \
+            "check that ${rel} is a readable text file, then re-run the check"
+    fi
+    printf '%s\n' "${out}"
 }

@@ -53,8 +53,13 @@ EOF
 # inside forbiddenModules and in a second array, a CI step that reaches a recipe
 # through its script, CI-only recipes and a CI-only job, a label assigned to a shell
 # variable, a quoted label name with a trailing comment, a job-level `defaults: run:`
-# mapping, a Dependabot `labels:` list at its key's own indentation, and a Dependabot
-# entry with no `labels:` key (the implied `dependencies`).
+# mapping, a Dependabot `labels:` list at its key's own indentation, a Dependabot
+# entry with no `labels:` key (the implied `dependencies`), a `permissions: {}` whose
+# write scope is on the job, a push workflow's per-tag concurrency group without
+# `github.workflow` that never cancels, ci.yml's cancel-only-on-pull-requests
+# expression, a `run:` block made fail-closed by its own `set -euo pipefail`, a
+# step-level and a composite `shell: bash`, a Dependabot prefix without its colon,
+# and a Renovate cooldown of `1 week` against Dependabot's 7 days.
 make_fixture() {
     local root
     root=$(make_temp_dir)
@@ -158,6 +163,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: \${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -189,11 +202,18 @@ EOF
 name: Label
 on: pull_request
 permissions: {}
+concurrency:
+  group: label-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   label:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - run: |
+          # The label this PR's type maps to.
+          set -euo pipefail
           case "$TYPE" in
             fix) label=bug ;;
             ci) label="ci" ;;
@@ -206,6 +226,9 @@ name: Release
 on:
   push:
 permissions: {}
+concurrency:
+  group: release-\${{ github.ref_name }}
+  cancel-in-progress: false
 jobs:
   build:
     permissions:
@@ -213,6 +236,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: jdx/mise-action@${SHA} # v4.2.0
+      - name: Package
+        shell: bash
+        run: scripts/package_dmg.sh | tee package.log
+EOF
+    cat >"${root}/.github/workflows/title.yml" <<EOF
+name: PR title
+on:
+  pull_request:
+    types: [opened, edited]
+permissions:
+  pull-requests: read
+concurrency:
+  group: \${{ github.workflow }}-\${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@${SHA} # v6.1.1
+        with:
+          types: |
+            feat
+            fix
+            ci
+            deps
 EOF
     mkdir -p "${root}/.github/rulesets"
     cat >"${root}/.github/rulesets/main.json" <<'EOF'
@@ -235,6 +283,8 @@ runs:
   using: composite
   steps:
     - uses: actions/cache@${SHA} # v4.2.3
+    - shell: bash
+      run: echo "cached" | tee -a "\$GITHUB_STEP_SUMMARY"
 EOF
     # The next rule's `(print|debugPrint)\b` would join the Core ban list if the
     # no_ui_import_in_core block did not end at it.
@@ -274,18 +324,28 @@ updates:
     groups:
       all:
         patterns: ["*"]
+    commit-message:
+      prefix: "deps:"
+    cooldown:
+      default-days: 7
   - package-ecosystem: "github-actions"
     directory: "/"
     labels:
     - "dependencies"
     - ci
+    commit-message:
+      prefix: ci
+    cooldown:
+      default-days: 7
 EOF
     cat >"${root}/.github/renovate.json" <<'EOF'
 {
   "enabledManagers": ["mise"],
   "labels": [
     "dependencies"
-  ]
+  ],
+  "commitMessagePrefix": "deps:",
+  "minimumReleaseAge": "1 week"
 }
 EOF
     echo "${root}"
@@ -346,7 +406,7 @@ case_run_all_passes() {
     root=$(make_fixture)
     capture "${BASH}" "${CHECKS}/run-all.sh" --root "${root}"
     assert_exit 0
-    assert_stdout_contains "harness checks: 10 check(s) passed"
+    assert_stdout_contains "harness checks: 12 check(s) passed"
 }
 
 case_run_all_reports_every_failure() {
@@ -359,7 +419,7 @@ case_run_all_reports_every_failure() {
     assert_exit 1
     assert_stderr_contains "ERR_CHECK_RECIPE_MISSING"
     assert_stderr_contains "ERR_CHECK_WORKFLOW_PERMISSIONS"
-    assert_stderr_contains "ERR_CHECKS_FAILED: 2 of 10 harness check(s) failed: just-recipes-exist.sh workflow-pins-and-permissions.sh"
+    assert_stderr_contains "ERR_CHECKS_FAILED: 2 of 12 harness check(s) failed: just-recipes-exist.sh workflow-pins-and-permissions.sh"
     assert_stderr_not_contains "skills-frontmatter.sh" "a passing check named as failed"
     assert_stderr_not_contains "skills-index-complete.sh" "a passing check named as failed"
     assert_stdout_contains "==> scripts/checks/skills-index-complete.sh"
@@ -514,7 +574,7 @@ case_workflows_tag_pin_in_composite_action() {
     capture "${BASH}" "${CHECKS}/workflow-pins-and-permissions.sh" --root "${root}"
     assert_exit 1
     assert_contract ERR_CHECK_WORKFLOW_UNPINNED
-    assert_stderr_contains ".github/actions/setup/action.yml:6: actions/setup-python@v5"
+    assert_stderr_contains ".github/actions/setup/action.yml:$(wc -l <"${root}/.github/actions/setup/action.yml" | tr -d ' '): actions/setup-python@v5"
 }
 
 case_workflows_sha_without_version_comment() {
@@ -1171,8 +1231,10 @@ case_labels_workflow_add_label() {
     capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
     assert_exit 1
     assert_contract ERR_CHECK_LABEL_UNDECLARED
-    assert_stderr_contains ".github/workflows/label.yml:15: applies \`stale\`"
-    assert_stderr_contains ".github/workflows/label.yml:15: applies \`triaged\`"
+    local last
+    last=$(wc -l <"${root}/.github/workflows/label.yml" | tr -d ' ')
+    assert_stderr_contains ".github/workflows/label.yml:${last}: applies \`stale\`"
+    assert_stderr_contains ".github/workflows/label.yml:${last}: applies \`triaged\`"
     assert_stderr_not_contains "\`ci\`" "a declared label in a comma list reported"
     assert_stderr_not_contains "\`\$label\`" "a variable read as a label"
 }
@@ -1184,7 +1246,7 @@ case_labels_workflow_assignment() {
     capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
     assert_exit 1
     assert_contract ERR_CHECK_LABEL_UNDECLARED
-    assert_stderr_contains ".github/workflows/label.yml:11: applies \`infra\`"
+    assert_stderr_contains ".github/workflows/label.yml:$(grep -n "LABEL='infra'" "${root}/.github/workflows/label.yml" | cut -d: -f1): applies \`infra\`"
 }
 
 case_labels_dependabot_explicit() {
@@ -1237,6 +1299,519 @@ case_labels_missing_file() {
     capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
     assert_exit 1
     assert_contract ERR_CHECK_INPUT_MISSING
+}
+
+# --- workflow-hygiene.sh ------------------------------------------------------
+
+# line_of ROOT REL TEXT — the line number of the first line of ROOT/REL containing TEXT.
+line_of() {
+    grep -nF -- "$3" "$1/$2" | head -n 1 | cut -d: -f1
+}
+
+case_hygiene_pass() {
+    local root
+    root=$(make_fixture)
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "workflow-hygiene: "
+}
+
+case_hygiene_top_level_write() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/label.yml "^permissions: {}$" "permissions:\\
+  pull-requests: write"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_PERMISSION_SCOPE
+    assert_stderr_contains ".github/workflows/label.yml:4: top-level \`pull-requests: write\` is granted to every job"
+    assert_stderr_not_contains "release.yml" "a job-level write reported"
+}
+
+case_hygiene_top_level_shorthand() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^permissions: {}$" "permissions: read-all"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_PERMISSION_SCOPE
+    assert_stderr_contains ".github/workflows/release.yml:4: top-level \`permissions: read-all\` grants every scope to every job"
+}
+
+case_hygiene_top_level_flow_write() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^permissions: {}$" "permissions: { contents: write }"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_PERMISSION_SCOPE
+    assert_stderr_contains ".github/workflows/release.yml:4: top-level \`permissions: { contents: write }\` grants a write scope"
+}
+
+case_hygiene_job_shorthand() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^    permissions:$" "    permissions: write-all"
+    replace_in "${root}" .github/workflows/release.yml "^      contents: write$" "    env: {}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_PERMISSION_SCOPE
+    assert_stderr_contains "job \`build\` uses \`permissions: write-all\`, which grants every scope"
+}
+
+case_hygiene_pr_without_concurrency() {
+    local root
+    root=$(make_fixture)
+    sed '/^concurrency:/,/^  cancel-in-progress:/d' "${root}/.github/workflows/ci.yml" >"${CASE_DIR}/ci.yml"
+    mv "${CASE_DIR}/ci.yml" "${root}/.github/workflows/ci.yml"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/ci.yml: runs on pull requests but has no top-level \`concurrency:\`"
+    assert_stderr_not_contains "release.yml" "a push-only workflow required to declare concurrency"
+}
+
+case_hygiene_flow_trigger_without_concurrency() {
+    local root
+    root=$(make_fixture)
+    cat >"${root}/.github/workflows/docs.yml" <<'EOF'
+name: Docs
+on: [push, "pull_request"]
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: set -euo pipefail; echo docs
+EOF
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/docs.yml: runs on pull requests"
+    assert_stderr_not_contains "ERR_CHECK_WORKFLOW_SHELL" "a one-line run: starting with set -euo pipefail reported"
+}
+
+case_hygiene_constant_group() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/label.yml "^  group: .*$" "  group: label"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/label.yml:5: group \`label\` is the same for every run"
+}
+
+case_hygiene_no_group() {
+    local root
+    root=$(make_fixture)
+    sed '/^  group: /d' "${root}/.github/workflows/label.yml" >"${CASE_DIR}/label.yml"
+    mv "${CASE_DIR}/label.yml" "${root}/.github/workflows/label.yml"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/label.yml:4: \`concurrency:\` has no \`group:\`"
+}
+
+case_hygiene_push_cancels() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "cancel-in-progress: false" "cancel-in-progress: true"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/release.yml:7: \`cancel-in-progress: true\` on a push-triggered workflow"
+    assert_stderr_not_contains "label.yml" "a pull-request-only workflow's cancel reported"
+}
+
+case_hygiene_push_cancel_expression() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "cancel-in-progress: false" "cancel-in-progress: \${{ github.ref != 'refs/heads/main' }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/release.yml:7: \`cancel-in-progress: \${{ github.ref != 'refs/heads/main' }}\` on a push-triggered workflow is not limited to pull request runs"
+}
+
+case_hygiene_shared_group() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/title.yml "^  group: .*$" "  group: label-\${{ github.ref }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/title.yml:$(line_of "${root}" .github/workflows/title.yml "  group:"): group \`label-\${{ github.ref }}\` is also used by .github/workflows/label.yml:5"
+}
+
+case_hygiene_run_without_shell() {
+    local root
+    root=$(make_fixture)
+    sed '/^defaults:/,/^    shell: bash/d' "${root}/.github/workflows/ci.yml" >"${CASE_DIR}/ci.yml"
+    mv "${CASE_DIR}/ci.yml" "${root}/.github/workflows/ci.yml"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_SHELL
+    assert_stderr_contains ".github/workflows/ci.yml:$(line_of "${root}" .github/workflows/ci.yml "run: scripts/lint.sh"): a \`run:\` step in job \`lint\` names no shell"
+    assert_stderr_contains "in job \`bootstrap-smoke\` names no shell"
+    assert_stderr_not_contains "in job \`app\`" "a job with defaults.run.shell: bash reported"
+    assert_stderr_contains "block-style \`defaults:\`"
+    assert_stderr_not_contains "{ run:" "flow-style advice this check cannot read"
+}
+
+case_hygiene_set_line_not_first() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/label.yml "^          .*The label this PR.*$" '          echo "labelling"'
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_SHELL
+    assert_stderr_contains ".github/workflows/label.yml:$(line_of "${root}" .github/workflows/label.yml "- run: |"): a \`run:\` step in job \`label\` names no shell"
+}
+
+case_hygiene_shell_not_fail_closed() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/ci.yml "^        shell: bash$" "        shell: sh"
+    replace_in "${root}" .github/workflows/release.yml "^        shell: bash$" "        shell: bash -e {0}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_SHELL
+    assert_stderr_contains ".github/workflows/ci.yml:$(line_of "${root}" .github/workflows/ci.yml "shell: sh"): \`shell: sh\` does not stop"
+    assert_stderr_contains ".github/workflows/release.yml:$(line_of "${root}" .github/workflows/release.yml "shell: bash -e"): \`shell: bash -e {0}\` does not stop"
+}
+
+case_hygiene_custom_fail_closed_shell_passes() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^        shell: bash$" "        shell: bash --noprofile --norc -euo pipefail {0}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_hygiene_composite_shell() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/actions/setup/action.yml "^    - shell: bash$" "    - shell: sh"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_SHELL
+    assert_stderr_contains ".github/actions/setup/action.yml:$(line_of "${root}" .github/actions/setup/action.yml "shell: sh"): \`shell: sh\` does not stop"
+}
+
+case_hygiene_reports_every_rule() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^permissions: {}$" "permissions: write-all"
+    replace_in "${root}" .github/workflows/release.yml "cancel-in-progress: false" "cancel-in-progress: true"
+    replace_in "${root}" .github/workflows/release.yml "^        shell: bash$" "        shell: sh"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    first_stderr_is ERR_CHECK_WORKFLOW_PERMISSION_SCOPE
+    assert_stderr_contains "ERR_CHECK_WORKFLOW_CONCURRENCY: "
+    assert_stderr_contains "ERR_CHECK_WORKFLOW_SHELL: "
+}
+
+# --- dependency-bots-agree.sh -------------------------------------------------
+
+case_bots_pass() {
+    local root
+    root=$(make_fixture)
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "dependency-bots-agree: "
+}
+
+case_bots_pass_without_bots() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/dependabot.yml" "${CASE_DIR}/dependabot.yml"
+    mv "${root}/.github/renovate.json" "${CASE_DIR}/renovate.json"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "nothing to compare"
+    assert_stdout_not_contains "every bot prefix" "a success line printed after nothing was compared"
+}
+
+case_bots_dependabot_prefix_not_a_type() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/dependabot.yml 'prefix: "deps:"' 'prefix: "bump(swift):"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_PREFIX
+    assert_stderr_contains ".github/dependabot.yml:$(line_of "${root}" .github/dependabot.yml "bump(swift)"): Dependabot \`swift\` commit-message.prefix \`bump(swift):\` has type \`bump\`, which the title check at .github/workflows/title.yml:$(line_of "${root}" .github/workflows/title.yml "amannn/") does not accept"
+    assert_stderr_not_contains "github-actions" "the entry whose prefix is a listed type reported"
+}
+
+case_bots_renovate_prefix_not_a_type() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/renovate.json '"commitMessagePrefix": "deps:"' '"commitMessagePrefix": "tooling:"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_PREFIX
+    assert_stderr_contains ".github/renovate.json:$(line_of "${root}" .github/renovate.json "tooling:"): Renovate commitMessagePrefix \`tooling:\` has type \`tooling\`"
+}
+
+case_bots_dependabot_prefix_missing() {
+    local root
+    root=$(make_fixture)
+    sed '/^    commit-message:$/{N;/deps:/d;}' "${root}/.github/dependabot.yml" >"${CASE_DIR}/dependabot.yml"
+    mv "${CASE_DIR}/dependabot.yml" "${root}/.github/dependabot.yml"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_PREFIX
+    assert_stderr_contains ".github/dependabot.yml:3: Dependabot \`swift\` commit-message.prefix is not set"
+}
+
+case_bots_renovate_prefix_missing() {
+    local root
+    root=$(make_fixture)
+    sed '/"commitMessagePrefix"/d' "${root}/.github/renovate.json" >"${CASE_DIR}/renovate.json"
+    mv "${CASE_DIR}/renovate.json" "${root}/.github/renovate.json"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_PREFIX
+    assert_stderr_contains ".github/renovate.json: Renovate commitMessagePrefix is not set"
+}
+
+case_bots_default_types() {
+    local root
+    root=$(make_fixture)
+    sed '/^        with:$/,$d' "${root}/.github/workflows/title.yml" >"${CASE_DIR}/title.yml"
+    mv "${CASE_DIR}/title.yml" "${root}/.github/workflows/title.yml"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_PREFIX
+    assert_stderr_contains "Dependabot \`swift\` commit-message.prefix \`deps:\` has type \`deps\`"
+    assert_stderr_contains "Renovate commitMessagePrefix \`deps:\` has type \`deps\`"
+    assert_stderr_not_contains "github-actions" "ci, one of the action's default types, reported"
+}
+
+case_bots_no_title_check() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/workflows/title.yml" "${CASE_DIR}/title.yml"
+    replace_in "${root}" .github/dependabot.yml 'prefix: "deps:"' 'prefix: "bump:"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "not comparing commit prefixes"
+}
+
+case_bots_cooldowns_disagree() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/renovate.json '"1 week"' '"3 days"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_COOLDOWN
+    assert_stderr_contains ".github/renovate.json:$(line_of "${root}" .github/renovate.json "3 days"): Renovate minimumReleaseAge is 3 day(s)"
+    assert_stderr_contains "Dependabot \`github-actions\` cooldown.default-days is 7 day(s)"
+}
+
+case_bots_cooldown_missing() {
+    local root
+    root=$(make_fixture)
+    awk '/^  - package-ecosystem: "github-actions"/ { second = 1 } second && /cooldown:|default-days:/ { next } { print }' \
+        "${root}/.github/dependabot.yml" >"${CASE_DIR}/dependabot.yml"
+    mv "${CASE_DIR}/dependabot.yml" "${root}/.github/dependabot.yml"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_COOLDOWN
+    assert_stderr_contains ".github/dependabot.yml:$(line_of "${root}" .github/dependabot.yml '"github-actions"'): Dependabot \`github-actions\` cooldown.default-days is not set"
+    assert_stderr_not_contains "day(s)" "agreeing values listed as a disagreement"
+}
+
+case_bots_cooldown_unreadable() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/renovate.json '"1 week"' '"a fortnight"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_COOLDOWN
+    assert_stderr_contains "Renovate minimumReleaseAge \`a fortnight\` is not a whole number of days"
+}
+
+# write_mixed_workflow ROOT GROUP [CANCEL] — .github/workflows/mixed.yml, triggered on
+# push and pull_request, with the given concurrency group and cancel-in-progress.
+write_mixed_workflow() {
+    cat >"$1/.github/workflows/mixed.yml" <<EOF
+name: Mixed
+on:
+  push:
+  pull_request:
+permissions: {}
+concurrency:
+  group: $2
+  cancel-in-progress: ${3:-false}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: set -o pipefail; make | tee build.log
+EOF
+}
+
+case_hygiene_pr_key_on_mixed_triggers() {
+    local root
+    root=$(make_fixture)
+    write_mixed_workflow "${root}" "\${{ github.workflow }}-\${{ github.head_ref }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/mixed.yml:7: group \`\${{ github.workflow }}-\${{ github.head_ref }}\` is keyed by the pull request"
+    assert_stderr_not_contains "title.yml" "a pull-request-only workflow's PR key reported"
+}
+
+case_hygiene_pr_key_with_run_id_fallback_passes() {
+    local root
+    root=$(make_fixture)
+    write_mixed_workflow "${root}" "\${{ github.workflow }}-\${{ github.head_ref || github.run_id }}"
+    replace_in "${root}" .github/workflows/title.yml "^  group: .*$" "  group: \${{ github.workflow }}-\${{ github.event.pull_request.number }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_hygiene_ref_type_is_not_ref() {
+    local root
+    root=$(make_fixture)
+    write_mixed_workflow "${root}" "\${{ github.workflow }}-\${{ github.ref_type }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/mixed.yml:7: group \`\${{ github.workflow }}-\${{ github.ref_type }}\` is the same for every run"
+}
+
+case_hygiene_flow_mapping_trigger() {
+    local root
+    root=$(make_fixture)
+    cat >"${root}/.github/workflows/docs.yml" <<'EOF'
+name: Docs
+on: {push: {branches: [main]}, pull_request: {types: [opened, edited]}}
+permissions: {}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+EOF
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/docs.yml: runs on pull requests"
+}
+
+case_hygiene_push_cancel_on_push_event() {
+    local root
+    root=$(make_fixture)
+    write_mixed_workflow "${root}" "\${{ github.workflow }}-\${{ github.ref }}" "\${{ github.event_name == 'push' }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_CONCURRENCY
+    assert_stderr_contains ".github/workflows/mixed.yml:8: \`cancel-in-progress: \${{ github.event_name == 'push' }}\` on a push-triggered workflow is not limited to pull request runs"
+}
+
+case_hygiene_push_cancel_not_push_passes() {
+    local root
+    root=$(make_fixture)
+    write_mixed_workflow "${root}" "\${{ github.workflow }}-\${{ github.ref }}" "\${{ github.event_name != 'push' }}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_hygiene_set_errexit_off_fails() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/label.yml "^          set -euo pipefail$" "          set +e -o pipefail"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_WORKFLOW_SHELL
+    assert_stderr_contains "a \`run:\` step in job \`label\` names no shell"
+}
+
+case_hygiene_long_option_shell_passes() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^        shell: bash$" "        shell: /usr/bin/bash -o errexit -o pipefail {0}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_hygiene_other_interpreters_pass() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/release.yml "^        shell: bash$" "        shell: pwsh"
+    replace_in "${root}" .github/actions/setup/action.yml "^    - shell: bash$" "    - shell: python {0}"
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_hygiene_unreadable_file() {
+    local root
+    root=$(make_fixture)
+    chmod 000 "${root}/.github/workflows/label.yml"
+    if [ -r "${root}/.github/workflows/label.yml" ]; then
+        echo "  skip: running as a user who can read a mode-000 file" >&2
+        return 0
+    fi
+    capture "${BASH}" "${CHECKS}/workflow-hygiene.sh" --root "${root}"
+    chmod 644 "${root}/.github/workflows/label.yml"
+    assert_exit 1
+    assert_contract ERR_CHECK_READ_FAILED
+    assert_stderr_contains "could not read .github/workflows/label.yml"
+}
+
+case_bots_prefix_without_type() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/dependabot.yml 'prefix: "deps:"' 'prefix: "[deps]"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_PREFIX
+    assert_stderr_contains "Dependabot \`swift\` commit-message.prefix \`[deps]\` has no type"
+}
+
+case_bots_flow_mapping_settings() {
+    local root
+    root=$(make_fixture)
+    cat >"${root}/.github/dependabot.yml" <<'EOF'
+version: 2
+updates:
+  - package-ecosystem: "swift"
+    directory: "/"
+    commit-message: { prefix: "deps:" }
+    cooldown: { default-days: 7 }
+EOF
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 0
+    replace_in "${root}" .github/dependabot.yml "default-days: 7" "default-days: 5"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_COOLDOWN
+    assert_stderr_contains ".github/dependabot.yml:6: Dependabot \`swift\` cooldown.default-days is 5 day(s)"
+}
+
+case_bots_json5_notice() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/renovate.json" "${root}/renovate.json5"
+    mv "${root}/.github/dependabot.yml" "${CASE_DIR}/dependabot.yml"
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "notice: renovate.json5 is JSON5, which this check does not read"
+    assert_stdout_contains "nothing to compare"
+    assert_stdout_not_contains "every bot prefix" "a success line printed after nothing was compared"
+}
+
+case_bots_other_json_config_name() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/renovate.json" "${root}/.renovaterc.json"
+    replace_in "${root}" .renovaterc.json '"1 week"' '"2 days"'
+    capture "${BASH}" "${CHECKS}/dependency-bots-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_BOT_COOLDOWN
+    assert_stderr_contains ".renovaterc.json:$(line_of "${root}" .renovaterc.json "2 days"): Renovate minimumReleaseAge is 2 day(s)"
 }
 
 run_case "run-all: passes on a conforming tree" case_run_all_passes
@@ -1319,4 +1894,47 @@ run_case "labels: Dependabot's implied dependencies label must be declared" case
 run_case "labels: an empty Dependabot labels list implies nothing" case_labels_dependabot_empty_list
 run_case "labels: an undeclared Renovate addLabels value fails" case_labels_renovate
 run_case "labels: a missing labels.yml fails" case_labels_missing_file
+run_case "hygiene: passes on a conforming tree" case_hygiene_pass
+run_case "hygiene: a top-level write scope fails" case_hygiene_top_level_write
+run_case "hygiene: a top-level read-all fails" case_hygiene_top_level_shorthand
+run_case "hygiene: a top-level flow mapping with a write fails" case_hygiene_top_level_flow_write
+run_case "hygiene: a job-level write-all fails" case_hygiene_job_shorthand
+run_case "hygiene: a pull request workflow without concurrency fails" case_hygiene_pr_without_concurrency
+run_case "hygiene: a flow-list pull_request trigger without concurrency fails" case_hygiene_flow_trigger_without_concurrency
+run_case "hygiene: a constant concurrency group fails" case_hygiene_constant_group
+run_case "hygiene: a concurrency block without a group fails" case_hygiene_no_group
+run_case "hygiene: cancel-in-progress true on a push workflow fails" case_hygiene_push_cancels
+run_case "hygiene: a push workflow's cancel expression not on event_name fails" case_hygiene_push_cancel_expression
+run_case "hygiene: two workflows sharing a group fail" case_hygiene_shared_group
+run_case "hygiene: a run step with no shell fails" case_hygiene_run_without_shell
+run_case "hygiene: a set -euo pipefail after the first command does not count" case_hygiene_set_line_not_first
+run_case "hygiene: a shell that is not fail-closed fails" case_hygiene_shell_not_fail_closed
+run_case "hygiene: a custom bash template with -e and pipefail passes" case_hygiene_custom_fail_closed_shell_passes
+run_case "hygiene: a composite step's non-bash shell fails" case_hygiene_composite_shell
+run_case "hygiene: all three rules report in one run" case_hygiene_reports_every_rule
+run_case "bots: passes on a conforming tree" case_bots_pass
+run_case "bots: passes with no bot configured" case_bots_pass_without_bots
+run_case "bots: a Dependabot prefix outside the title types fails" case_bots_dependabot_prefix_not_a_type
+run_case "bots: a Renovate prefix outside the title types fails" case_bots_renovate_prefix_not_a_type
+run_case "bots: a Dependabot entry without a prefix fails" case_bots_dependabot_prefix_missing
+run_case "bots: a Renovate config without a prefix fails" case_bots_renovate_prefix_missing
+run_case "bots: a title check without types uses the action's defaults" case_bots_default_types
+run_case "bots: no title check skips the prefix comparison" case_bots_no_title_check
+run_case "bots: disagreeing cooldowns fail" case_bots_cooldowns_disagree
+run_case "bots: a Dependabot entry without a cooldown fails" case_bots_cooldown_missing
+run_case "bots: an unreadable Renovate age fails" case_bots_cooldown_unreadable
+run_case "hygiene: a pull request key on a workflow with other triggers fails" case_hygiene_pr_key_on_mixed_triggers
+run_case "hygiene: a pull request key with a run_id fallback passes" case_hygiene_pr_key_with_run_id_fallback_passes
+run_case "hygiene: github.ref_type is not a per-run key" case_hygiene_ref_type_is_not_ref
+run_case "hygiene: a one-line flow mapping on: is read" case_hygiene_flow_mapping_trigger
+run_case "hygiene: cancelling on the push event fails" case_hygiene_push_cancel_on_push_event
+run_case "hygiene: cancelling unless the event is push passes" case_hygiene_push_cancel_not_push_passes
+run_case "hygiene: a set that turns errexit off fails" case_hygiene_set_errexit_off_fails
+run_case "hygiene: a bash template with -o errexit -o pipefail passes" case_hygiene_long_option_shell_passes
+run_case "hygiene: pwsh and python shells are outside the rule" case_hygiene_other_interpreters_pass
+run_case "hygiene: an unreadable workflow fails under the contract" case_hygiene_unreadable_file
+run_case "bots: a prefix with no leading type fails" case_bots_prefix_without_type
+run_case "bots: one-level flow mappings are read" case_bots_flow_mapping_settings
+run_case "bots: a JSON5 Renovate config gets a notice, and no success line" case_bots_json5_notice
+run_case "bots: .renovaterc.json is read" case_bots_other_json_config_name
 finish

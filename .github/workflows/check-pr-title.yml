@@ -11,6 +11,11 @@ on:
 permissions:
   pull-requests: read
 
+concurrency:
+  # A newer push or title edit supersedes the run in progress.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   main:
     name: Validate PR title
@@ -26,7 +31,8 @@ jobs:
           # The action's default types plus `deps`. The bots' configured prefixes
           # must all appear here: dependabot.yml uses `deps:` (swift) and `ci:`
           # (github-actions), renovate.json uses `deps:` (policy:
-          # .claude/rules/project.md, Toolchain Pinning).
+          # .claude/rules/project.md, Toolchain Pinning;
+          # scripts/checks/dependency-bots-agree.sh checks it).
           types: |
             feat
             fix
