@@ -65,6 +65,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `changing-gates` records why `.githooks/pre-commit` stays lint-only (no
   formatting, compiling, or related tests).
 
+- `.claude/rules/testing.md` now covers an oracle independent of the implementation,
+  one contract suite per port run against both the fake and the adapter (worked through
+  for `FrontmostAppProviding`), a test clock or zero `Tuning` delay instead of sleeps,
+  a per-test temporary directory, plain `import MyAppCore` instead of `@testable
+  import`, and when a test belongs in `LaunchUITests`. `.claude/rules/swift.md` now
+  covers an exhaustive `switch` without `default:` over Core's enums, `package` access
+  for cross-module internals (invisible to `App/`), and where constants live.
 - The `triaging-issues` skill's "Requests from daily use" section: a friction or
   idea raised while using the app is filed now, parked as `on hold` with its reason,
   or dropped with the reason stated, and a parked issue is promoted or closed only by
