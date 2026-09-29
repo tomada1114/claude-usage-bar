@@ -348,6 +348,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `.claude/settings.json`'s `PostToolUse` hook now formats only the `.swift` file an
+  `Edit`/`Write`/`MultiEdit` touched, through `scripts/format-edited-file.sh`, instead of
+  running `swiftformat .` over the whole tree after every edit; non-Swift paths and files
+  outside the checkout are skipped, and a swiftformat failure is reported to the agent
+  rather than silenced.
 - `just check` step lists in `README.md`, `docs/getting-started.md`, `CONTRIBUTING.md`,
   `AGENTS.md`, and the `create-pr` and `tdd` skills now match the justfile's `check`
   recipe, and every recipe shows a one-line summary in `just --list` (`[doc(...)]`).

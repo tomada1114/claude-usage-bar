@@ -55,11 +55,11 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|MultiEdit",
         "hooks": [
           {
             "type": "command",
-            "command": "mise exec -- swiftformat . 2>/dev/null; true"
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && mise exec -- scripts/format-edited-file.sh"
           }
         ]
       }
