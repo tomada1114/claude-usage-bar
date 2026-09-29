@@ -41,10 +41,10 @@ because an agent app has no app menu and therefore no built-in way to quit.
 Option 1. `INFOPLIST_KEY_LSUIElement: YES` in `project.yml`; `App/` declares one
 `MenuBarExtra` whose label is `UsageBadgeLabel` and whose content is `UsageMenu`, with
 `.menuBarExtraStyle(.menu)`. The badge is the rounded weekly percentage inside a thin
-rounded outline, rendered into a template image so the menu bar tints it for light, dark,
-and highlighted states. Quit goes through the `ApplicationTerminating` port, answered by
-`NSApplicationTerminator` in `ClaudeUsageBarPlatform`, so `ClaudeUsageBarUI` never calls
-AppKit to end the process.
+outline of Clawd, Claude Code's pixel mascot, rendered into a template image so the menu
+bar tints it for light, dark, and highlighted states. Quit goes through the
+`ApplicationTerminating` port, answered by `NSApplicationTerminator` in
+`ClaudeUsageBarPlatform`, so `ClaudeUsageBarUI` never calls AppKit to end the process.
 
 - It beats option 2 because the menu holds only read-only lines and one command, which is
   what a native menu is for, and because XCUITest can see a `.menu` style's items (by
