@@ -133,6 +133,33 @@ Keeping logic out of views is what makes the coverage floor honest: the gate
 measures the code that can regress silently, not SwiftUI layout. The same reasoning
 keeps decisions out of adapters — see "Ports and adapters" above.
 
+## What is contract and what is private
+
+Nothing here is published, so the contract is not a package's export list. It is what
+something outside the change can observe: another module of this package, a user's Mac
+that ran an earlier build, or the user themselves. Four things are contract; everything
+else is private.
+
+| Contract | What depends on it | What changing it requires |
+|---|---|---|
+| **Core's public API** — every `public` declaration in `MyAppCore` | `MyAppUI`, `MyAppPlatform`, `App/`, and the tests, which all import `MyAppCore` as a separate module; `Package.swift` declares the library products so `App/` can link them, and nothing outside this repository does | Update every caller in the same pull request — the compiler finds them (`just build`, `just test`). A new public declaration carries a `///` saying why (the Review Checklist in `AGENTS.md`); a new port is an ADR (`AGENTS.md` › "Before changing the architecture") |
+| **The bundle identifier** — `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml`, set by `scripts/bootstrap.sh` | Everything macOS keys by it on a user's Mac: the sandbox container that holds the app's `UserDefaults` and Application Support files, and its permission (TCC) grants; the log subsystem (`AppLog.subsystem`); and `just run`, `just logs`, and `just reset-permissions`, which read it through `scripts/bundle-id.sh` | Treat it as fixed once a build has left your machine: a new identifier is a new app to macOS, so the user's settings, files, and grants stay behind under the old one. Changing it is a human's decision, recorded as an ADR; `project.yml` and `AppLog.subsystem` change together (`AppLogTests` fails otherwise), and a signing or entitlements change that goes with it needs the sign-off in `AGENTS.md` › "Security and human approval" |
+| **`UserDefaults` keys** — each key the app stores, and the type of its value | A user's saved preferences, read back by every later version | Renaming, removing, or retyping a key silently resets the user's value, because the old one is left unread. Read the old key and migrate it in Core, with a test that starts from the old value. Choosing `UserDefaults` at all is the persistence ADR |
+| **File formats** — anything the app writes and reads back in a later version: a config file, saved state, a document | Files already on a user's disk, and for a hand-edited config ("A human-editable config file" below), the user who edits it | A new version still reads the old format — a version field and a migration in Core, with a test that decodes a sample of the previous format. The format and where it lives are the persistence ADR. A cache the app can rebuild from scratch is private |
+
+The template ships no `UserDefaults` key and no file format; the first one an app adds
+is where its persistence ADR starts (`AGENTS.md` › "Before changing the architecture").
+
+**Private** is everything else: `internal` and `private` declarations, how an adapter
+talks to the OS behind its port, view structure, file and type layout, test helpers, and
+log categories and messages. Changing any of it needs only the gates that already run
+(`AGENTS.md` › "Validating a change").
+
+No gate notices a broken contract item except where one is named above — the compiler
+for Core's public API, `AppLogTests` for the log subsystem. A renamed key or a changed
+format passes every check and fails on the user's Mac, so review is what catches it, and
+a user-visible change to any of the four owes a `CHANGELOG.md` entry.
+
 ## Recommended optional dependencies
 
 The template ships with zero. When a real need appears, these are vetted

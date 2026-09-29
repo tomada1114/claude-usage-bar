@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `AGENTS.md` opens with what it owns and what it leaves to skills, `.claude/rules/`,
+  and gate configs, and its "Important Reminders" gain three conventions: a comment
+  carries only what the code cannot, a problem found outside the task is filed as an
+  issue (or listed in the pull request) rather than fixed in it, and the pre-commit
+  hook stays limited to what is mechanically decidable.
+- `docs/architecture.md` › "What is contract and what is private": Core's public API,
+  the bundle identifier, `UserDefaults` keys, and file formats are contract, each with
+  what depends on it and what changing it requires; everything else is private.
+
 - The commit-time staged guard now also refuses `.envrc.*` (samples excepted) and
   `.claude/settings.local.json` by path, and Anthropic, OpenAI, Slack, Google API,
   Stripe live (`sk_live_`/`rk_live_`; test keys stay allowed) and JWT shapes, plus an

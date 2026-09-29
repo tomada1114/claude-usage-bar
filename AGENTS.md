@@ -1,5 +1,20 @@
 # Project Guide
 
+This file holds what every agent needs before it knows which task it is on: what the
+app is, how to check a change, where code goes, and which decisions need a human. It is
+the one guide Claude Code and Codex CLI share, and it leaves three things to others:
+
+- **The conventions of one kind of change** belong to a skill under `.agents/skills/`,
+  loaded when the work calls for it — [Skills](#skills) is the index.
+- **The rules for one kind of file** belong to `.claude/rules/`, loaded by path —
+  [Rules](#rules) lists them.
+- **A value a gate enforces** — a lint rule, a format option, the coverage floor, a tool
+  pin — belongs to its config (`.swiftlint.yml`, `.swiftformat`, `Package.swift`,
+  `scripts/coverage.sh`, `mise.toml`); running the gate is how you learn it.
+
+A rule that belongs to one of those lands there, and this file points to it rather than
+keeping a second copy that goes stale.
+
 ## Overview
 
 This is a macOS SwiftUI app built from a strict template: XcodeGen generates the
@@ -144,6 +159,9 @@ Config/Debug.xcconfig       # Debug-only build settings project.yml cannot expre
   `print`, `debugPrint`, and `NSLog` are rejected under `Packages/*/Sources/` and `App/`
   by `.swiftlint.yml`'s `no_print_in_sources` (`.claude/rules/swift.md` › Logging)
 - `MyApp.xcodeproj` is generated — edit `project.yml` instead
+- Four things are contract rather than private — Core's public API, the bundle
+  identifier, `UserDefaults` keys, and file formats — and each changes only as
+  `docs/architecture.md` › What is contract and what is private says
 
 ## Before changing the architecture
 
@@ -466,3 +484,16 @@ Before submitting a PR:
 - ALWAYS prefer editing an existing file to creating a new one
 - NEVER proactively create documentation files unless explicitly requested
 - NEVER lower the coverage floor or disable safety lint rules to make a check pass
+- A comment carries only what the code cannot: a non-obvious why, a trap the next edit
+  would spring, an external constraint. Default to none, and keep the rest to a line or
+  two — restating the code, or narrating how it came to be, is what the code and git
+  already do. A `///` on public API is its contract and stays (`.claude/rules/swift.md`)
+- A problem you find outside the task is recorded, not fixed: file it as an issue with
+  what `triaging-issues` asks of a body — a type label, a `path:line`, and an observable
+  close condition — or, where filing is not yours to do (it is a remote write; see
+  "Security and human approval"), list it in the pull request description. Never widen
+  the pull request to fix it
+- Keep `.githooks/pre-commit` to what is mechanically decidable (lint, the skills
+  mirror, the staged guard); a judgement call — a relaxed config, a deleted workflow, a
+  lowered threshold — is weighed in PR review, not blocked by the hook.
+  `changing-gates` › `.githooks/pre-commit` records why
