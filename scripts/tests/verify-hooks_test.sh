@@ -115,6 +115,57 @@ case_outside_work_tree_skips() {
     assert_stdout_contains "not inside a git work tree"
 }
 
+# A broken git is not an absent one: a malformed .git/config makes every git
+# call fail with "bad config line", and that must fail loudly rather than be
+# mistaken for "not a git repository" and skipped.
+case_broken_git_config_fails() {
+    local repo
+    repo=$(make_installed_repo)
+    printf '[core\n\tbroken = \n' >>"${repo}/.git/config"
+    cd "${repo}"
+    capture "${BASH}" "${VERIFY_SRC}"
+    assert_exit 1
+    assert_stderr_contains "Expected:"
+    assert_stderr_contains "Actual:"
+    assert_stderr_contains "Next:"
+    head -n 1 "${CASE_DIR}/stderr" | grep -q '^ERR_HOOKS_GIT_FAILED: ' || _fail "first stderr line is not ERR_HOOKS_GIT_FAILED"
+}
+
+# Any other git failure (stubbed here) also fails rather than skips.
+case_git_other_failure_fails() {
+    local dir
+    dir=$(make_temp_dir)
+    cd "${dir}"
+    stub_command git 'echo "fatal: unable to access config: Permission denied" >&2; exit 128'
+    capture "${BASH}" "${VERIFY_SRC}"
+    assert_exit 1
+    assert_stderr_contains "Permission denied"
+    head -n 1 "${CASE_DIR}/stderr" | grep -q '^ERR_HOOKS_GIT_FAILED: ' || _fail "first stderr line is not ERR_HOOKS_GIT_FAILED"
+}
+
+# A warning git prints on stderr does not override its answer on stdout: an
+# installed repo whose git warns (and still answers "true") passes.
+case_git_warning_on_stderr_still_passes() {
+    local repo real_git
+    repo=$(make_installed_repo)
+    real_git=$(command -v git)
+    cd "${repo}"
+    stub_command git "if [ \"\$*\" = 'rev-parse --is-inside-work-tree' ]; then echo 'warning: something odd' >&2; fi; exec '${real_git}' \"\$@\""
+    capture "${BASH}" "${VERIFY_SRC}"
+    assert_exit 0
+}
+
+# The skip decision does not depend on the caller's locale: the script pins
+# LC_ALL=C on the git call it matches against.
+case_outside_work_tree_skips_under_other_locale() {
+    local dir
+    dir=$(make_temp_dir)
+    cd "${dir}"
+    capture env LC_ALL=de_DE.UTF-8 LANG=de_DE.UTF-8 GIT_CEILING_DIRECTORIES="${dir}" "${BASH}" "${VERIFY_SRC}"
+    assert_exit 0
+    assert_stdout_contains "not inside a git work tree"
+}
+
 # A linked worktree of an installed repo also passes: .githooks is tracked, so
 # it is checked out into the worktree too, and the hooks directory the shared
 # common config resolves to must still match this worktree's .githooks.
@@ -137,5 +188,9 @@ run_case "ALLOW_MISSING_GIT_HOOKS=1 skips even with hooks broken" case_opt_out_s
 run_case "CI=true skips even with hooks broken" case_ci_true_skips
 run_case "CI=0 with hooks unset still fails" case_ci_zero_still_fails
 run_case "outside a git work tree skips" case_outside_work_tree_skips
+run_case "a malformed .git/config fails ERR_HOOKS_GIT_FAILED" case_broken_git_config_fails
+run_case "any other git failure fails ERR_HOOKS_GIT_FAILED" case_git_other_failure_fails
+run_case "a git warning on stderr does not override its answer" case_git_warning_on_stderr_still_passes
+run_case "outside a git work tree skips under a non-C locale" case_outside_work_tree_skips_under_other_locale
 run_case "a linked worktree of an installed repo exits 0" case_linked_worktree_passes
 finish

@@ -23,11 +23,14 @@
 # Skips (exit 0, one-line notice on stdout), checked in this order: the
 # ALLOW_MISSING_GIT_HOOKS opt-out is truthy; CI is truthy (unset, empty, "0",
 # and "false" all count as off); or this directory is not inside a git work
-# tree. Git work tree: required to check anything; a check that is meaningless
-# outside one skips rather than fails.
+# tree (git reports "not a git repository", or answers that this is not a work
+# tree, e.g. inside .git or a bare repository). Git work tree: required to check
+# anything; a check that is meaningless outside one skips rather than fails. Any
+# other git failure is an error, not a skip.
 #
 # Errors (each followed by Expected:/Actual:/Next: lines, exit 1; Next: always
 # ends with the ALLOW_MISSING_GIT_HOOKS opt-out sentence):
+#   ERR_HOOKS_GIT_FAILED       git failed for a reason other than "not a git repository"
 #   ERR_HOOKS_NOT_INSTALLED    git does not resolve the hooks directory to .githooks/
 #   ERR_HOOKS_NOT_EXECUTABLE   .githooks/pre-commit is missing or not executable
 set -euo pipefail
@@ -52,11 +55,6 @@ if is_truthy "${CI-}"; then
     echo "verify-hooks: CI is set; not checking the pre-commit hook."
     exit 0
 fi
-if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null || true)" != "true" ]; then
-    echo "verify-hooks: not inside a git work tree; not checking the pre-commit hook."
-    exit 0
-fi
-
 fail() { # fail <code> <what failed> <expected> <actual> <next>
     echo "$1: $2" >&2
     echo "Expected: $3" >&2
@@ -64,6 +62,36 @@ fail() { # fail <code> <what failed> <expected> <actual> <next>
     echo "Next: $5 ${OPT_OUT_SENTENCE}" >&2
     exit 1
 }
+
+# Only "not a git repository" means skip. Any other git failure (a malformed
+# config, an unreadable .git, a dubious-ownership refusal) is a broken git, not
+# an absent one, and must fail rather than pass silently. git's answer on stdout
+# ("true"/"false") decides first, whatever the exit code or any warning on
+# stderr, so a git that answers is read by its answer. Only when it gives none
+# is stderr read, with LC_ALL=C so the match does not depend on the locale.
+INSIDE_EXIT=0
+INSIDE_OUT=$(LC_ALL=C git rev-parse --is-inside-work-tree 2>/dev/null) || INSIDE_EXIT=$?
+case "${INSIDE_OUT}" in
+    true) ;;
+    false)
+        echo "verify-hooks: not inside a git work tree; not checking the pre-commit hook."
+        exit 0
+        ;;
+    *)
+        INSIDE_ERR=$(LC_ALL=C git rev-parse --is-inside-work-tree 2>&1 >/dev/null || true)
+        case "${INSIDE_ERR}" in
+            *"not a git repository"*)
+                echo "verify-hooks: not inside a git work tree; not checking the pre-commit hook."
+                exit 0
+                ;;
+        esac
+        fail ERR_HOOKS_GIT_FAILED \
+            "\`git rev-parse --is-inside-work-tree\` failed for a reason other than \"not a git repository\"" \
+            "git either answers, or reports \"not a git repository\"" \
+            "exit ${INSIDE_EXIT}: $(printf '%s' "${INSIDE_ERR:-${INSIDE_OUT}}" | head -n 1)" \
+            "run \`git rev-parse --is-inside-work-tree\` here and fix what it reports (often a malformed .git/config or ~/.gitconfig)."
+        ;;
+esac
 
 TOPLEVEL=$(git rev-parse --show-toplevel)
 EXPECTED_DIR="${TOPLEVEL}/.githooks"

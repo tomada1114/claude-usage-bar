@@ -19,8 +19,20 @@ TESTS_RUN=0
 TESTS_FAILED=0
 
 # A test must never write to the repository that happens to be running it: git
-# exports these to hooks, and an inherited GIT_DIR outranks both cwd and -C.
-unset GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_OBJECT_DIRECTORY GIT_COMMON_DIR
+# exports GIT_DIR, GIT_INDEX_FILE and more to hooks, an inherited GIT_DIR outranks
+# both cwd and -C, and GIT_CONFIG_*, GIT_CEILING_DIRECTORIES or
+# GIT_ALTERNATE_OBJECT_DIRECTORIES would still reshape a fixture repository. So
+# every exported GIT_* variable is unset, not a fixed list. `compgen -e` lists
+# exported names only (never values), so a multi-line value cannot confuse it.
+unset_git_env() {
+    local name
+    for name in $(compgen -e); do
+        case "${name}" in
+            GIT_*) unset "${name}" ;;
+        esac
+    done
+}
+unset_git_env
 
 # Removes every directory the helpers created. Register it: trap cleanup_temp EXIT
 cleanup_temp() {
