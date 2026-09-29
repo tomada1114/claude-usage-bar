@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/checks/labels-declared.sh` (`just check-harness`) now also reads
+  `scripts/label-pr.sh`'s type-to-label mapping, so a PR type mapped to a label
+  `.github/labels.yml` does not declare fails the harness instead of a live PR.
 - Two harness checks, run by `just check-harness`, for workflow and dependency-bot
   hygiene. `scripts/checks/workflow-hygiene.sh` fails when a workflow grants a `write`
   scope or `read-all`/`write-all` at the top level instead of on the job, when a

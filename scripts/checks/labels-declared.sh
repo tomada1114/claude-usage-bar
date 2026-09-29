@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Every label an issue form, a workflow, or a dependency bot applies is declared in
-# .github/labels.yml, and no label is declared there twice — so `just labels` creates
+# Every label an issue form, a workflow, a dependency bot, or scripts/label-pr.sh
+# applies is declared in .github/labels.yml, and no label is declared there twice — so `just labels` creates
 # every label something in the repository expects to exist, and never with two
 # conflicting colors or descriptions.
 #
@@ -28,6 +28,9 @@
 #   - renovate.json and .github/renovate.json: every string in a `"labels"` or
 #     `"addLabels"` array (one line or several, no nested arrays). Renovate applies no
 #     label by default.
+#   - scripts/label-pr.sh: its type-to-label mapping, read with the workflow parser
+#     above (`feat) label=enhancement ;;`), so every label a PR title can map to is
+#     declared before the script ever reports ERR_LABELPR_UNDECLARED on a live PR.
 #   Matching is exact (case included). The parsing is line-based, not YAML- or
 #   JSON-aware; .github/release.yml, which reads labels rather than applying them, is
 #   not compared.
@@ -200,6 +203,9 @@ done
 if [ -f "${CHECK_ROOT}/.github/dependabot.yml" ]; then
     add_applied "$(dependabot_labels .github/dependabot.yml)"
 fi
+if [ -f "${CHECK_ROOT}/scripts/label-pr.sh" ]; then
+    add_applied "$(workflow_labels scripts/label-pr.sh)"
+fi
 for rel in renovate.json .github/renovate.json; do
     if [ -f "${CHECK_ROOT}/${rel}" ]; then
         add_applied "$(renovate_labels "${rel}")"
@@ -216,7 +222,7 @@ done <<EOF
 ${APPLIED}
 EOF
 check_report ERR_CHECK_LABEL_UNDECLARED "a label is applied but not declared" \
-    "every label an issue form, workflow, or dependency bot applies to be a \`- name:\` in ${LABELS}" \
+    "every label an issue form, workflow, dependency bot, or scripts/label-pr.sh applies to be a \`- name:\` in ${LABELS}" \
     "declare the label in ${LABELS} (name, color, description), or change the file that applies it to a declared label; then \`just labels\` creates it"
 
 check_finish "labels-declared: every applied label is declared once in ${LABELS}."

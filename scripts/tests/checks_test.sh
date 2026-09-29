@@ -1172,6 +1172,31 @@ case_labels_pass() {
     assert_stdout_contains "labels-declared: every applied label is declared once"
 }
 
+case_labels_label_pr_real_mapping() {
+    local root
+    root=$(make_fixture)
+    mkdir -p "${root}/scripts"
+    cp "${REPO_ROOT}/scripts/label-pr.sh" "${root}/scripts/label-pr.sh"
+    cp "${REPO_ROOT}/.github/labels.yml" "${root}/.github/labels.yml"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "labels-declared: every applied label is declared once"
+}
+
+case_labels_label_pr_undeclared() {
+    local root
+    root=$(make_fixture)
+    mkdir -p "${root}/scripts"
+    cp "${REPO_ROOT}/scripts/label-pr.sh" "${root}/scripts/label-pr.sh"
+    cp "${REPO_ROOT}/.github/labels.yml" "${root}/.github/labels.yml"
+    replace_in "${root}" scripts/label-pr.sh "feat) label=enhancement ;;" "feat) label=feature ;;"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains "scripts/label-pr.sh:$(grep -n 'label=feature' "${root}/scripts/label-pr.sh" | cut -d: -f1): applies \`feature\`"
+    assert_stderr_not_contains "\`bug\`" "a declared mapping reported"
+}
+
 case_labels_duplicate() {
     local root
     root=$(make_fixture)
@@ -1882,6 +1907,8 @@ run_case "ci: a stale CI_ONLY exception fails" case_ci_stale_ci_only
 run_case "ci: no check recipe fails" case_ci_no_check_recipe
 run_case "ci: a missing ci.yml fails" case_ci_missing_workflow
 run_case "labels: passes on a conforming tree" case_labels_pass
+run_case "labels: the real label-pr.sh mapping passes" case_labels_label_pr_real_mapping
+run_case "labels: a label-pr.sh mapping to an undeclared label fails" case_labels_label_pr_undeclared
 run_case "labels: a label declared twice fails" case_labels_duplicate
 run_case "labels: two names differing only in case fail" case_labels_duplicate_differs_in_case
 run_case "labels: an undeclared label in an issue form flow list fails" case_labels_issue_form_flow
