@@ -67,7 +67,7 @@ if grep -qF -- "${PLACEHOLDER_NAME}" "${CHECK_ROOT}/project.yml"; then
 fi
 
 if [ "${HAVE_SECTION}" = 1 ]; then
-    if ! printf '%s\n' "${SECTION}" | grep -qF -- "Non-goals"; then
+    if ! grep -qF -- "Non-goals" <<<"${SECTION}"; then
         check_problem "AGENTS.md: the \`## Product\` section does not name its \`**Non-goals**\`"
     fi
 
