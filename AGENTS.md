@@ -225,6 +225,7 @@ tool that sees the generated copy rather than the authored one:
 | `building-swiftui-screens` | a view in `MyAppUI`: a thin renderer over a `MyAppCore` `@Observable` view model (how it holds its model, what `body` may contain), `#Preview` per state, accessibility identifiers and labels, Reduce Motion, keyboard reachability, and verifying a screen |
 | `starting-an-app` | turning this template into a new app: `scripts/bootstrap.sh`'s rename, what the new repository keeps, its `just labels` and `just ruleset` setup, choosing the app shape (windowed or menu-bar agent), and deciding the sandbox posture |
 | `shipping-issues` | shipping the open issue backlog: ranking issues by `priority: P0`-`P3`, implementing the top one, reviewing it with `/code-review`, and taking its PR through CI to merge |
+| `steering-the-roadmap` | the app's direction in `docs/architecture/roadmap.md`: its Now / Next / Later horizons, who changes it and when, how the backlog and parked `on hold` issues feed it, and answering "what is next?" before `shipping-issues` |
 | `merging-dependency-prs` | landing open Dependabot (SwiftPM, GitHub Actions) and Renovate (`mise.toml`) PRs: the security checklist, one human approval for a listed batch of passing PRs, and a combined branch for conflicting bumps |
 
 ### Rules

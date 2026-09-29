@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `steering-the-roadmap` skill and a `docs/architecture/roadmap.md` skeleton, linked
+  from the ADR index but not an ADR: the app's direction as Now / Next / Later outcomes
+  with no dates, filled in after `AGENTS.md`'s `## Product`. The skill says who changes
+  the page (the owner decides; an agent proposes in a pull request) and when, how
+  closed issues and parked `on hold` issues feed it through `triaging-issues`, and that
+  a roadmap line records direction and never authorizes implementation.
 - `designing-ui` and `building-swiftui-screens` skills. `designing-ui` holds the macOS
   craft rules this repository adds on top of Apple's Human Interface Guidelines (each
   cited with its URL) and the per-app design lock — accent color, type, spacing,

@@ -20,6 +20,12 @@ Three places hold the reasoning, and each has one job:
 `AGENTS.md`'s "Before changing the architecture" names the changes that owe an ADR;
 `recording-architecture-decisions` is the skill that writes one.
 
+Beside the ADRs, [`roadmap.md`](roadmap.md) records the app's direction — which outcomes
+come now, next, and later — and links the issues and ADRs each one needs. It is not an
+ADR: it takes no status and no number, has no row in the table below, and authorizes
+nothing. The template ships it as a skeleton; `steering-the-roadmap` is the skill that
+changes it.
+
 ## Status legend
 
 | Status | Meaning |
