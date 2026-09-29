@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `authoring-skills` records where a skill lives: in `.agents/skills/` by default,
+  never a committed plugin marketplace, and when a ref-pinned shared plugin is allowed.
+
 - `changing-gates` records why `.githooks/pre-commit` stays lint-only (no
   formatting, compiling, or related tests).
 

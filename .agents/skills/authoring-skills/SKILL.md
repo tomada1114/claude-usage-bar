@@ -106,6 +106,16 @@ A skill added, renamed, or deleted gets its row in `AGENTS.md`'s Skills table up
 the same commit, and widening a skill's subject means widening its row. Enforced by:
 `scripts/checks/skills-index-complete.sh` (the row set, not its wording).
 
+## Where a skill lives
+
+A skill lives in `.agents/skills/` (mirrored to `.claude/skills/`), and the template
+commits no plugin marketplace (#98, #142). Codex CLI cannot read Claude Code plugins;
+`just agents-check`, the frontmatter and description checks, and CI never see a plugin
+skill; a plugin update changes behavior without a pull request unless pinned; and a
+public template cannot ask its users to trust a personal marketplace. A shared plugin
+pinned by ref is an option only for a stack-agnostic skill copied across repositories
+that demonstrably drifts.
+
 ## Size and structure
 
 - Target 150 body lines per `SKILL.md`, never exceed 200.
