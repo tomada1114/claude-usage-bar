@@ -218,6 +218,11 @@ the `zizmor` job partly check and review holds for the rest:
 - a new check goes into an existing job unless it needs a different runner, trigger, or
   permission footprint. Widening `permissions:` or adding a workflow that writes is a
   security-relevant change that needs sign-off, not a routine CI edit.
+- a job's `name:` is what `.github/rulesets/main.json` requires as a status-check
+  context, so renaming, removing, or re-triggering a job means editing that file in the
+  same change; `scripts/checks/ruleset-contexts.sh` (`just check-harness`) fails while a
+  required context matches no job in a `pull_request` workflow, and `just ruleset` then
+  pushes the edited ruleset to the live repository (sign-off first).
 
 ## What no gate here sees
 

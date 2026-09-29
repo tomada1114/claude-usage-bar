@@ -158,6 +158,21 @@ jobs:
     steps:
       - uses: jdx/mise-action@${SHA} # v4.2.0
 EOF
+    mkdir -p "${root}/.github/rulesets"
+    cat >"${root}/.github/rulesets/main.json" <<'EOF'
+{
+  "rules": [
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "required_status_checks": [
+          { "context": "lint", "integration_id": 15368 }
+        ]
+      }
+    }
+  ]
+}
+EOF
     cat >"${root}/.github/actions/setup/action.yml" <<EOF
 name: Setup
 runs:
@@ -213,7 +228,7 @@ case_run_all_passes() {
     root=$(make_fixture)
     capture "${BASH}" "${CHECKS}/run-all.sh" --root "${root}"
     assert_exit 0
-    assert_stdout_contains "harness checks: 6 check(s) passed"
+    assert_stdout_contains "harness checks: 7 check(s) passed"
 }
 
 case_run_all_reports_every_failure() {
@@ -226,7 +241,7 @@ case_run_all_reports_every_failure() {
     assert_exit 1
     assert_stderr_contains "ERR_CHECK_RECIPE_MISSING"
     assert_stderr_contains "ERR_CHECK_WORKFLOW_PERMISSIONS"
-    assert_stderr_contains "ERR_CHECKS_FAILED: 2 of 6 harness check(s) failed: just-recipes-exist.sh workflow-pins-and-permissions.sh"
+    assert_stderr_contains "ERR_CHECKS_FAILED: 2 of 7 harness check(s) failed: just-recipes-exist.sh workflow-pins-and-permissions.sh"
     assert_stderr_not_contains "skills-frontmatter.sh" "a passing check named as failed"
     assert_stderr_not_contains "skills-index-complete.sh" "a passing check named as failed"
     assert_stdout_contains "==> scripts/checks/skills-index-complete.sh"
@@ -705,6 +720,92 @@ case_product_no_non_goals() {
     assert_stderr_contains "does not name its ${BT}**Non-goals**${BT}"
 }
 
+# --- ruleset-contexts.sh ----------------------------------------------------
+
+# add_context ROOT CONTEXT — appends a required status check to the fixture ruleset.
+add_context() {
+    sed "s|^          { \"context\": \"lint\", \"integration_id\": 15368 }$|&,\\
+          { \"context\": \"$2\", \"integration_id\": 15368 }|" "$1/.github/rulesets/main.json" >"${CASE_DIR}/rs"
+    mv "${CASE_DIR}/rs" "$1/.github/rulesets/main.json"
+}
+
+# write_pr_workflow ROOT FILE ON — a pull_request-style workflow with named jobs.
+write_pr_workflow() {
+    cat >"$1/.github/workflows/$2" <<EOF
+name: Extra
+on: $3
+permissions: {}
+jobs:
+  title:
+    name: "Validate PR title" # shown in the checks list
+    runs-on: ubuntu-latest
+    steps: []
+  build:
+    name: Build (\${{ matrix.os }})
+    runs-on: ubuntu-latest
+    steps: []
+EOF
+}
+
+case_contexts_pass_by_id() {
+    local root
+    root=$(make_fixture)
+    capture "${BASH}" "${CHECKS}/ruleset-contexts.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "ruleset-contexts: every required status check"
+}
+
+case_contexts_pass_by_name_and_expression() {
+    local root
+    root=$(make_fixture)
+    write_pr_workflow "${root}" extra.yml "[push, pull_request]"
+    add_context "${root}" "Validate PR title"
+    add_context "${root}" "Build (macos-15)"
+    capture "${BASH}" "${CHECKS}/ruleset-contexts.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_contexts_missing_job() {
+    local root
+    root=$(make_fixture)
+    add_context "${root}" "Renamed Job"
+    capture "${BASH}" "${CHECKS}/ruleset-contexts.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_RULESET_CONTEXT
+    assert_stderr_contains 'required context "Renamed Job" matches no job'
+    assert_stderr_not_contains 'context "lint"' "a matching context reported"
+}
+
+case_contexts_push_only_workflow() {
+    local root
+    root=$(make_fixture)
+    add_context "${root}" "build"
+    capture "${BASH}" "${CHECKS}/ruleset-contexts.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_RULESET_CONTEXT
+    assert_stderr_contains 'required context "build" matches no job'
+}
+
+case_contexts_pull_request_target_does_not_count() {
+    local root
+    root=$(make_fixture)
+    write_pr_workflow "${root}" extra.yml "pull_request_target"
+    add_context "${root}" "Validate PR title"
+    capture "${BASH}" "${CHECKS}/ruleset-contexts.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_RULESET_CONTEXT
+    assert_stderr_contains 'required context "Validate PR title" matches no job'
+}
+
+case_contexts_missing_ruleset() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/rulesets/main.json" "${CASE_DIR}/main.json"
+    capture "${BASH}" "${CHECKS}/ruleset-contexts.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_INPUT_MISSING
+}
+
 run_case "run-all: passes on a conforming tree" case_run_all_passes
 run_case "run-all: two broken checks are both reported" case_run_all_reports_every_failure
 run_case "run-all: rejects an unknown argument" case_run_all_rejects_unknown_argument
@@ -750,4 +851,10 @@ run_case "product: the word TODO in real prose is not a marker" case_product_pro
 run_case "product: a skeleton filled in inside the template fails" case_product_skeleton_filled_in_the_template
 run_case "product: no Product section fails" case_product_no_section
 run_case "product: a section that never names its non-goals fails" case_product_no_non_goals
+run_case "contexts: passes when a context matches a job id" case_contexts_pass_by_id
+run_case "contexts: passes on a quoted name and a matrix expression" case_contexts_pass_by_name_and_expression
+run_case "contexts: a context matching no job fails" case_contexts_missing_job
+run_case "contexts: a job only in a push workflow does not count" case_contexts_push_only_workflow
+run_case "contexts: a pull_request_target workflow does not count" case_contexts_pull_request_target_does_not_count
+run_case "contexts: a missing main.json fails" case_contexts_missing_ruleset
 finish

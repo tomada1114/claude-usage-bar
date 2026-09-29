@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/checks/ruleset-contexts.sh`, run by `just check-harness`: fails when a
+  required status-check context in `.github/rulesets/main.json` matches no job `name:`
+  (or id, when a job has none) in a workflow triggered on `pull_request`, so renaming a
+  CI job can no longer leave a required check that never reports and blocks every PR.
+  A `${{ … }}` expression in a job name matches any text; `pull_request_target` does
+  not count as a pull_request trigger.
 - A `merging-dependency-prs` skill for landing Dependabot (SwiftPM, GitHub Actions) and
   Renovate (`mise.toml`) PRs: a security checklist, one human approval per invocation
   for a listed batch of passing PRs, a combined branch for conflicting bumps, and
