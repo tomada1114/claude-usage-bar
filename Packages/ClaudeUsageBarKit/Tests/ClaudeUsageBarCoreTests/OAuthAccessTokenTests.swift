@@ -18,6 +18,6 @@ struct OAuthAccessTokenTests {
     @Test
     func `keeps the value for the one place that sends it`() {
         #expect(OAuthAccessToken("abc").value == "abc")
-        #expect(OAuthAccessToken("abc") != OAuthAccessToken("abd"))
+        #expect(OAuthAccessToken("abc") != OAuthAccessToken("xyz"))
     }
 }
