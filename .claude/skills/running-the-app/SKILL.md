@@ -78,13 +78,13 @@ Shipped code logs through `os.Logger`, never `print`
 (`Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/AppLog.swift`; `.swiftlint.yml`'s
 `no_print_in_sources`), because a `.app` launched the way users launch it has nowhere to
 send stdout. `AppLog` declares one subsystem — the bundle identifier — and one logger
-per concern, named for the concern (`frontmost-app`), which is what makes a stream
+per concern, named for the concern (`usage`), which is what makes a stream
 narrowable to one story:
 
 ```bash
 just logs   # log stream --predicate 'subsystem == "<bundle id>"' --level debug
 /usr/bin/log stream --level debug --style compact \
-  --predicate 'subsystem == "io.github.tomada1114.ClaudeUsageBar" AND category == "frontmost-app"'
+  --predicate 'subsystem == "io.github.tomada1114.ClaudeUsageBar" AND category == "usage"'
 ```
 
 Four things cost time if you guess them:
@@ -97,10 +97,10 @@ Four things cost time if you guess them:
   live in memory, not in the persisted store, so `log show --last 5m --predicate
   'subsystem == "…"' --debug --info` prints an empty table even for lines a stream was
   catching a second earlier. It reaches `.notice` and above only.
-- **Anything user-derived is redacted.** `name=<private>` in the output is the design
-  (`FrontmostAppViewModel.refresh()` annotates it), not a bug. Assert on the public half
-  of the line — that a refresh happened, that the port answered — instead of turning
-  private data on.
+- **Anything user-derived is redacted.** `<private>` in the output is the design — an
+  interpolated string without `privacy: .public` is private by default — not a bug. Assert on
+  the public half of the line — that a refresh happened, which `UsageError` case it
+  failed with (`UsageMenuViewModel.refresh()`) — instead of turning private data on.
 - **`log` is a zsh builtin**, so an interactive shell answers `log: too many arguments`.
   Spell it `/usr/bin/log` outside a `just` recipe.
 

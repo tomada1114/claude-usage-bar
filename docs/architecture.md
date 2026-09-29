@@ -9,7 +9,7 @@ distribution, macOS floor, and permissions — is recorded as ADRs under
 
 ```
 ┌───────────────────────────────────────────────────┐
-│ App/                                  (app shell) │  @main, WindowGroup — wiring
+│ App/                                  (app shell) │  @main, MenuBarExtra — wiring
 │                                                   │  only; composition root
 ├─────────────────────────┬─────────────────────────┤
 │ ClaudeUsageBarUI     (SwiftUI)   │ ClaudeUsageBarPlatform     (OS)  │  siblings — neither one
@@ -55,39 +55,47 @@ Apple-only frameworks such as Combine stay allowed, and so does Foundation — a
 
 ## Ports and adapters
 
-Code that talks to the OS — `NSWorkspace`, accessibility, a Carbon hotkey, an event tap,
-an `NSPanel` overlay, a login item — lives in `ClaudeUsageBarPlatform`, never in Core, a view, or
-the shell. It is always the same five pieces, and the template ships one worked example
-of them to copy:
+Code that talks to the OS — the keychain, the network, `NSApplication`, accessibility, a
+Carbon hotkey, an event tap, an `NSPanel` overlay, a login item — lives in
+`ClaudeUsageBarPlatform`, never in Core, a view, or the shell. It is always the same five
+pieces. `OAuthTokenProviding` is the worked example to copy; `UsageFetching` /
+`URLSessionUsageFetcher` has the same five:
 
 1. **The port**, in Core — a `Sendable` protocol taking and returning value types Core
-   owns: `FrontmostAppProviding` in
-   `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/FrontmostAppProviding.swift`.
-2. **The adapter**, in Platform — the OS framework import, translating the OS type into
-   the Core value and doing nothing else: `WorkspaceFrontmostAppProvider` in
-   `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarPlatform/WorkspaceFrontmostAppProvider.swift`.
+   owns: `OAuthTokenProviding` in
+   `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/OAuthTokenProviding.swift`.
+2. **The adapter**, in Platform — the OS framework import, translating the OS answer into
+   the Core value and doing nothing else: `SecurityCLITokenProvider` in
+   `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarPlatform/SecurityCLITokenProvider.swift`
+   maps `/usr/bin/security`'s exit status into a `UsageError` case and leaves parsing the
+   item's JSON to Core's `ClaudeCodeCredentials`.
 3. **The fake**, in `ClaudeUsageBarTestSupport` — a real implementation answering from data the
    test hands it, used by the Core tests of whatever consumes the port
-   (`.claude/rules/testing.md` › Fakes, not mocks): `FakeFrontmostAppProvider` in
-   `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarTestSupport/FakeFrontmostAppProvider.swift`.
+   (`.claude/rules/testing.md` › Fakes, not mocks): `FakeOAuthTokenProvider` in
+   `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarTestSupport/FakeOAuthTokenProvider.swift`.
 4. **The local-machine test**, in `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarPlatformTests` — the
    adapter against the *real* OS, which the fake by construction cannot check:
-   `WorkspaceFrontmostAppProviderTests` asks the live `NSWorkspace`. Every suite there
-   carries the `.requiresLocalMachine` trait, so it runs only with
-   `RUN_LOCAL_MACHINE_TESTS=1` — what `just test-local` sets — and is reported as
-   *skipped* under `just test` and in CI. It has to be: a runner has no logged-in GUI
-   session and cannot be granted Accessibility, Input Monitoring, or Screen Recording,
-   so such a test could only ever fail there. A skip is the honest outcome, and a human
-   runs `just test-local` when an adapter changes and puts the output in the pull
-   request (`.claude/rules/testing.md` › Where a Test Goes).
+   `SecurityCLITokenProviderTests` reads the login keychain through the real
+   `/usr/bin/security`. Every suite there carries the `.requiresLocalMachine` trait, so it
+   runs only with `RUN_LOCAL_MACHINE_TESTS=1` — what `just test-local` sets — and is
+   reported as *skipped* under `just test` and in CI. It has to be: a runner has no
+   logged-in GUI session, cannot be granted Accessibility, Input Monitoring, or Screen
+   Recording, and has no Claude Code sign-in in its keychain, so such a test could only
+   ever fail there. A skip is the honest outcome, and a human runs `just test-local` when
+   an adapter changes and puts the output in the pull request
+   (`.claude/rules/testing.md` › Where a Test Goes).
 5. **The contract suite**, in `ClaudeUsageBarTestSupport` — one function over the protocol that
    checks every promise the port's `///` states, so the fake cannot quietly promise
-   something the adapter does not: `FrontmostAppProvidingContract` in
-   `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarTestSupport/FrontmostAppProvidingContract.swift`.
-   `FrontmostAppProvidingContractTests` in `ClaudeUsageBarCoreTests` runs it against the fake on
-   every `just test` and in CI, and `WorkspaceFrontmostAppProviderTests` runs the same
+   something the adapter does not: `OAuthTokenProvidingContract` in
+   `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarTestSupport/OAuthTokenProvidingContract.swift`.
+   `OAuthTokenProvidingContractTests` in `ClaudeUsageBarCoreTests` runs it against the fake on
+   every `just test` and in CI, and `SecurityCLITokenProviderTests` runs the same
    function against the adapter under `.requiresLocalMachine` (`just test-local`)
    (`.claude/rules/testing.md` › One Contract Suite per Port).
+
+A port may drop the last two pieces only when no test can observe its promise, and its
+`///` says so: `ApplicationTerminating` / `NSApplicationTerminator` promises that the
+process ends, so the running app is where it is checked.
 
 `App/` is the composition root: the only place that constructs an adapter and hands it
 to a Core view model, so nothing below it knows which implementation answered. A test
@@ -125,9 +133,11 @@ through the same loggers, which they already see by importing `ClaudeUsageBarCor
 The conventions that go with it — one category per concern, a privacy annotation on
 anything user-derived, and never `print`/`debugPrint`/`NSLog` under `Sources/` or `App/`
 (`.swiftlint.yml`'s `no_print_in_sources` rejects them) — are in
-`.claude/rules/swift.md` › Logging. `FrontmostAppViewModel.refresh()` is the worked
-example: it logs that a refresh happened `.public` and the other application's name
-`.private`.
+`.claude/rules/swift.md` › Logging. `UsageMenuViewModel.refresh()` is the worked
+example: it logs a success at `.info` and a failed refresh's `UsageError` `.public` at
+`.error` — every case is a fixed name and at most a status code — and never the token
+or a response body, which `UsageError` cannot carry and `OAuthAccessToken` describes as
+`<redacted>`.
 
 ## Where new code goes
 
@@ -141,11 +151,11 @@ example: it logs that a refresh happened `.public` and the other application's n
 
 That last row carries one decision the table cannot: the app's *shape*. The template
 ships a regular windowed app — `WindowGroup`, a Dock tile, a launch test that waits for
-a window. A menu-bar agent (`LSUIElement`, `MenuBarExtra`, a launch test that waits for
-a status item) changes `project.yml`, `App/ClaudeUsageBarApp.swift`, and
-`LaunchUITests/LaunchTests.swift`, and nothing below them.
-`.agents/skills/starting-an-app/references/app-shapes.md` gives both shapes as proven
-code, including where an `NSApplicationDelegateAdaptor`'s delegate lives when
+a window. This app is a menu-bar agent (`LSUIElement`, `MenuBarExtra`, a launch test that
+waits for a status item; `docs/architecture/adr/0001-app-shape.md`), which changes
+`project.yml`, `App/ClaudeUsageBarApp.swift`, and `LaunchUITests/LaunchTests.swift`, and
+nothing below them. `.agents/skills/starting-an-app/references/app-shapes.md` describes
+both shapes, including where an `NSApplicationDelegateAdaptor`'s delegate lives when
 `MenuBarExtra` is not enough (`ClaudeUsageBarPlatform`, never `App/`).
 
 Keeping logic out of views is what makes the coverage floor honest: the gate

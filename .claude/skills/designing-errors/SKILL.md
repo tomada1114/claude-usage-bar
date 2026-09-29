@@ -21,30 +21,37 @@ Logging); the error-path test rule (`.claude/rules/testing.md` › What to Test)
 ## Where an error type lives
 
 - Declare every error a caller can observe in `ClaudeUsageBarCore`, next to the port or model
-  that throws it — `FrontmostAppProviding.swift` would hold a `FrontmostAppError`.
+  that throws it — `UsageError.swift` holds the one error every usage port throws.
   `ClaudeUsageBarUI` and `App/` switch on it, and a Core test's fake throws it, so it cannot
   live in `ClaudeUsageBarPlatform` (Core never imports Platform).
 - One `enum` per failure domain, `Error, Equatable, Sendable`. Cases name what went
-  wrong for the caller (`.permissionDenied`, `.notRunning`), not which API failed.
+  wrong for the caller (`.notSignedIn`, `.tokenExpired`), not which API failed.
 - Payloads carry only what a caller needs to decide, and are `Sendable` values:
   `Int32` codes, small enums, durations. Never an `NSError`, a `CFTypeRef`, or an
   underlying `any Error` — those are not `Equatable`, often not `Sendable`, and leak
   the adapter's mechanism into Core.
 
+`UsageError` (`Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/UsageError.swift`) is the
+worked example; abridged:
+
 ```swift
-/// Why the frontmost application could not be read — a caller shows a different
-/// recovery for each case, which is why this is an enum and not a message string.
-public enum FrontmostAppError: Error, Equatable, Sendable {
-    /// Accessibility is not granted; the UI offers to open System Settings.
-    case permissionDenied
-    /// The OS reported a failure the app has no recovery for; `code` is for logs.
-    case systemFailure(code: Int32)
+/// Why the usage numbers could not be refreshed — the menu shows a different line for
+/// each case, which is why this is an enum and not a message string.
+public enum UsageError: Error, Equatable, Sendable {
+    case cancelled
+    /// `status` is the `security` tool's exit status, or `nil` when it never started;
+    /// it is for logs only.
+    case credentialsUnreadable(status: Int32?)
+    case notSignedIn
+    case tokenExpired
+    case unexpectedResponse(statusCode: Int?)
+    case unreachable
 }
 ```
 
 ## Typed throws or plain throws
 
-Typed throws (`throws(FrontmostAppError)`, SE-0413) needs Swift 6; this package is
+Typed throws (`throws(UsageError)`, SE-0413) needs Swift 6; this package is
 `swift-tools-version: 6.2` in Swift 6 language mode, so it is available everywhere.
 
 - **Use `throws(E)`** when the caller switches over `E`'s cases: a port method, a
@@ -58,31 +65,37 @@ Typed throws (`throws(FrontmostAppError)`, SE-0413) needs Swift 6; this package 
   `.unknown(any Error)` to make a typed throw compile — map to a real case instead.
 
 ```swift
-public protocol FrontmostAppProviding: Sendable {
-    func currentFrontmostApp() throws(FrontmostAppError) -> FrontmostApp?
+public protocol OAuthTokenProviding: Sendable {
+    func accessToken() async throws(UsageError) -> OAuthAccessToken
 }
 
-// In a view model: the switch is exhaustive over FrontmostAppError.
-do {
-    app = try provider.currentFrontmostApp()
+// UsageMenuViewModel.refresh(): `do throws(UsageError)` keeps `error` typed.
+do throws(UsageError) {
+    let token = try await ports.tokenProvider.accessToken()
+    let snapshot = try await ports.usageFetcher.fetchUsage(with: token).snapshot()
+    state = UsageState(snapshot: snapshot, failure: nil, lastUpdated: now())
+} catch .cancelled {
+    return
 } catch {
-    switch error {
-    case .permissionDenied: state = .needsPermission
-    case let .systemFailure(code):
-        AppLog.frontmostApp.error("frontmost app read failed: \(code, privacy: .public)")
-        state = .unavailable
-    }
+    state.failure = error
+    AppLog.usage.error("refresh failed: \(String(describing: error), privacy: .public)")
 }
 ```
 
-`nil` stays the answer for "there is none" (no frontmost app is not a failure); an
-error is for "could not find out". Do not turn an expected absence into a throw.
+The per-case decision — which menu line each case shows — is the exhaustive `switch` in
+`UsagePresentation.line(for:)`, so a new case fails to compile until it has one.
+
+`nil` stays the answer for "there is none" (a window the endpoint did not report is a
+`nil` `UsageSnapshot.sevenDay`, not a throw); an error is for "could not find out". Do
+not turn an expected absence into a throw.
 
 ## No user data in errors or logs
 
-- An error payload never holds user content: no app names, window titles, file paths,
-  typed text, URLs, or identifiers of the user's documents. Errors travel — into logs,
-  crash reports, test output, and `String(describing:)` in a view.
+- An error payload never holds user content or a secret: no app names, window titles,
+  file paths, typed text, URLs, tokens, response bodies, or identifiers of the user's
+  documents. Errors travel — into logs, crash reports, test output, and
+  `String(describing:)` in a view. `UsageError`'s payloads are at most a status code,
+  which is why `refresh()` may log the whole error `.public`.
 - Log lines follow `.claude/rules/swift.md` › Logging: `AppLog`'s `os.Logger` only.
   Interpolate an OS status code or an enum case with `privacy: .public`; anything that
   came from the user or another app with `privacy: .private` — or leave it out.
@@ -105,7 +118,7 @@ do {
 } catch let error as CancellationError {
     throw error  // cancellation is not a failure: never log or map it
 } catch {
-    AppLog.frontmostApp.error("refresh failed")
+    AppLog.usage.error("refresh failed")
 }
 ```
 
@@ -114,7 +127,9 @@ do {
 - Typed throws and cancellation: a function that awaits cancellable work and declares
   `throws(E)` cannot throw `CancellationError`. Keep such functions on plain `throws`,
   or give `E` an explicit `.cancelled` case the caller treats as a no-op — never drop
-  the cancellation on the floor.
+  the cancellation on the floor. `UsageError.cancelled` is this app's: the
+  `URLSessionUsageFetcher` adapter maps `URLError.cancelled` and `CancellationError`
+  into it, and `refresh()` returns on it without recording or logging a failure.
 - A test asserts cancellation with `#expect(throws: CancellationError.self)`.
 
 ## Mapping OS errors in an adapter
@@ -124,29 +139,38 @@ error to a Core case is translation; choosing what the app does about it is Core
 
 - Convert at the call site, inside `ClaudeUsageBarPlatform`, into the Core enum the port
   declares. Nothing OS-typed crosses the port.
-- `AXError`: switch the known cases (`.apiDisabled`, `.notImplemented`, …) into Core
-  cases; everything else becomes `.systemFailure(code: result.rawValue)`.
-- `OSStatus` (an `Int32`): compare against the named constants you handle; pass any
-  other status through as `.systemFailure(code: status)` — never `noErr` as an error.
+- An exit status or `OSStatus` (an `Int32`): compare against the named constants you
+  handle; pass any other status through in a code-carrying case — never success as an
+  error. `SecurityCLITokenProvider` is the worked example (below).
+- `AXError`: an adapter over the Accessibility API would switch the known cases
+  (`.apiDisabled`, `.notImplemented`, …) into Core cases, and carry everything else's
+  `result.rawValue` in a code-carrying case, the same way.
 - `NSError` / a thrown Foundation error: match on `domain` and `code` (for example
   `NSCocoaErrorDomain` with `NSFileReadNoPermissionError`); carry only the `Int32`
   code, never `localizedDescription` or `userInfo`, which can hold paths and names.
 - Log the raw code in the adapter only if Core cannot, and with `privacy: .public`.
 
-```swift
-import ApplicationServices
-import ClaudeUsageBarCore
+`SecurityCLITokenProvider.accessToken()`
+(`Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarPlatform/SecurityCLITokenProvider.swift`)
+maps the `security` tool's exit status — `errSecItemNotFound` truncated to its low byte,
+44 — and nothing else:
 
-extension FrontmostAppError {
-    /// Translation only: which Core case an Accessibility result means.
-    init(_ result: AXError) {
-        switch result {
-        case .apiDisabled: self = .permissionDenied
-        default: self = .systemFailure(code: result.rawValue)
-        }
-    }
+```swift
+switch outcome {
+case .launchFailed:
+    throw .credentialsUnreadable(status: nil)
+case let .exited(status, _) where status == Self.itemNotFoundStatus:
+    throw .notSignedIn
+case let .exited(status, _) where status != 0:
+    throw .credentialsUnreadable(status: status)
+case let .exited(_, output):
+    return try ClaudeCodeCredentials.accessToken(from: output)
 }
 ```
+
+What an HTTP status means is not an OS error at all, so `URLSessionUsageFetcher` hands
+any status back untouched and `UsageResponse.snapshot()` decides in Core that 401 and 403
+are `.tokenExpired`.
 
 A test in `Tests/ClaudeUsageBarPlatformTests` checks this mapping against the real OS under
 `.requiresLocalMachine`; a Core test checks the decision with a fake that throws each

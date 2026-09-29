@@ -5,7 +5,7 @@ features. The difference is only three files — `project.yml`, `App/ClaudeUsage
 `LaunchUITests/LaunchTests.swift` — but it decides what the launch guarantee *is*, and
 therefore what `just uitest` is able to assert at all.
 
-| | Windowed (what the template ships) | Menu-bar agent |
+| | Windowed (what the template ships) | Menu-bar agent (this app) |
 |---|---|---|
 | Dock tile, app switcher, ⌘Tab | yes | no |
 | Main menu, ⌘Q, ⌘, | yes | no — the status item is the whole surface |
@@ -18,21 +18,22 @@ therefore what `just uitest` is able to assert at all.
 Everything else is identical: the three targets and the one-way dependency direction,
 ports and adapters, the coverage floor, signing, and every gate.
 
-## Windowed: read the shipped files, not a copy
+## Windowed: read the template's files, not a copy
 
-The template **is** the windowed reference, so it is not duplicated here — a copy would
-be the first thing to go stale. Read `App/ClaudeUsageBarApp.swift` (a `WindowGroup` holding
-`ContentView`) and `LaunchUITests/LaunchTests.swift` (wait for `app.windows.firstMatch`,
-then click through the counter). The app target needs no shape-specific `project.yml`
-key: `GENERATE_INFOPLIST_FILE: YES` with no `LSUIElement` entry *is* the regular shape.
+The template this app was cut from (the repository `.template-origin` names) **is** the
+windowed reference, so it is not duplicated here — a copy would be the first thing to go
+stale. Its `App/` entry point is a `WindowGroup` holding its first screen, and its
+`LaunchUITests/LaunchTests.swift` waits for `app.windows.firstMatch`. The app target
+needs no shape-specific `project.yml` key: `GENERATE_INFOPLIST_FILE: YES` with no
+`LSUIElement` entry *is* the regular shape.
 
-## Menu-bar agent
+## Menu-bar agent: read this app's files
 
-Every block in this section was applied to a clone of this template and proven there:
-`just build`, `just uitest`, and `just smoke` pass with exactly this text, and
-`just lint` (SwiftFormat plus SwiftLint `--strict` with every opt-in rule) accepts it.
-Copy it verbatim; the `NSStatusItem` variant further down was proven by `just build`
-and `just lint` only.
+This app is a menu-bar agent (`docs/architecture/adr/0001-app-shape.md`), so its shipped
+files are the reference, for the same reason the windowed shape is not copied here. They
+are held by every gate — CI's `app` job builds them, runs `just uitest`, and runs
+`just smoke`. The `NSStatusItem` variant further down was proven on a clone of the
+template by `just build` and `just lint` only.
 
 ### 1. `project.yml` — one key
 
@@ -53,79 +54,29 @@ Regenerate with `just generate` — `ClaudeUsageBar.xcodeproj` is generated outp
 
 ### 2. `App/ClaudeUsageBarApp.swift` — the entry point
 
-```swift
-import ClaudeUsageBarCore
-import ClaudeUsageBarPlatform
-import ClaudeUsageBarUI
-import SwiftUI
+The scene is `MenuBarExtra { UsageMenu(model:) } label: { UsageBadgeLabel(model:) }`
+with `.menuBarExtraStyle(.menu)`, and the initializer is the composition root: it builds
+the `ClaudeUsageBarPlatform` adapters, hands them to `UsageMenuViewModel`, and calls
+`startPolling()` so the badge fills in at launch rather than on the first click. The
+shell still only wires; the menu's content is `ClaudeUsageBarUI` views, and every decision
+they render stays in `ClaudeUsageBarCore`.
 
-/// Application entry point — wiring only. All real code lives in Packages/ClaudeUsageBarKit.
-///
-/// A menu-bar agent: `LSUIElement` keeps it out of the Dock and the app switcher, so
-/// `MenuBarExtra` is the whole user interface. `.menuBarExtraStyle(.window)` renders
-/// the content as a panel; the default `.menu` style renders it as an NSMenu and
-/// accepts only menu-shaped content (`Button`, `Divider`, `Text`).
-///
-/// This is also the composition root: the one place that knows both halves of a port.
-@main
-struct ClaudeUsageBarApp: App {
-    var body: some Scene {
-        MenuBarExtra("ClaudeUsageBar", systemImage: "number.circle") {
-            ContentView(
-                frontmostApp: FrontmostAppViewModel(provider: WorkspaceFrontmostAppProvider()),
-            )
-        }
-        .menuBarExtraStyle(.window)
-    }
-}
-```
-
-The shell still only wires: the scene type and the composition root line are the whole
-diff from the windowed entry point. The panel's content is a `ClaudeUsageBarUI` view — here the
-template's own `ContentView`, swapped for the app's real view later — and every
-decision it renders stays in `ClaudeUsageBarCore`.
+Choose the style deliberately. The `.menu` style renders the content as an `NSMenu` and
+accepts only menu-shaped content (`Button`, `Divider`, `Text`); `.menuBarExtraStyle(.window)`
+renders it as a panel that can hold any view, at the cost the XCUITest notes below
+measure.
 
 ### 3. `LaunchUITests/LaunchTests.swift` — the replacement assertion
 
-```swift
-import XCTest
-
-/// The agent app's launch guarantee: it starts and puts its item in the menu bar.
-///
-/// There is no window to wait for — `LSUIElement` makes the status item the app's
-/// whole visible surface.
-///
-/// XCTest by necessity — Apple has not ported UI automation to Swift Testing.
-/// All other tests use Swift Testing in Packages/ClaudeUsageBarKit.
-final class LaunchTests: XCTestCase {
-    private enum Timeout {
-        static let statusItemAppears: TimeInterval = 10
-    }
-
-    @MainActor
-    func testAppLaunchesAndShowsItsStatusItem() {
-        // A failed launch assertion should end the test immediately instead of
-        // cascading through the remaining waits against a dead app.
-        continueAfterFailure = false
-
-        let app = XCUIApplication()
-        app.launch()
-
-        // An accessory app never reaches the foreground: `app.windows` stays empty and
-        // `app.state` stays `.runningBackground`. The status item is the assertion —
-        // it sits in a second `menuBars` element of the app's own accessibility tree,
-        // beside the main menu an agent app never shows. Do not add `isHittable`: a
-        // background app's status item reports false until something activates the app,
-        // which `click()` does for itself.
-        let statusItem = app.menuBars.statusItems.firstMatch
-        XCTAssertTrue(statusItem.waitForExistence(timeout: Timeout.statusItemAppears))
-    }
-}
-```
+It waits for `app.menuBars.statusItems.firstMatch` instead of a window, clicks it, and
+waits for `app.menuItems["Quit ClaudeUsageBar"]` — matched by title, because the `.menu`
+style drops accessibility identifiers — then closes the menu. Quit is the one entry
+present in every state, so it proves the scene's content is wired. With the `.window`
+style the test would stop at the status item's existence.
 
 ## What XCUITest can and cannot see
 
-Measured on this template, not recalled — re-measure before trusting any of it on a
+Measured on the template, not recalled — re-measure before trusting any of it on a
 newer SDK:
 
 - **`app.launch()` works.** It does not hang or fail on an accessory app, even though
@@ -133,8 +84,9 @@ newer SDK:
   `app.windows.count` is `0`; neither is worth asserting on.
 - **The status item is in the app's own tree**, as
   `app.menuBars.statusItems.firstMatch` — `menuBars` holds two elements, the main menu
-  the agent never shows and a second one holding the status item. Its `title` is the
-  `systemImage` name (`number.circle` above), not the `MenuBarExtra` label.
+  the agent never shows and a second one holding the status item. Its `title` is not
+  the `MenuBarExtra` label: with `MenuBarExtra(_:systemImage:)` it read as the symbol's
+  name (`number.circle`).
 - **`isHittable` is `false`** until something activates the app, so an `isHittable`
   assertion fails right after launch. `click()` activates the app itself and works.
 - **`.menuBarExtraStyle(.window)` content is invisible to XCUITest.** After clicking
@@ -144,10 +96,10 @@ newer SDK:
   panel is covered by `ClaudeUsageBarCore` view-model tests, which is where it belongs anyway.
 - **The default `.menu` style *is* reachable**: after `click()`, its entries appear as
   `app.menuItems[…]`. They are matched **by title**
-  (`app.menuItems["Increment"]`) — a SwiftUI `.accessibilityIdentifier` on a menu
-  `Button` is dropped, and the element's identifier reads `menuAction:`. If the launch
-  test must assert more than the item's existence, that is the price of the `.menu`
-  style.
+  (`app.menuItems["Quit ClaudeUsageBar"]`, as this app's launch test does) — a SwiftUI
+  `.accessibilityIdentifier` on a menu `Button` is dropped, and the element's identifier
+  reads `menuAction:`. A launch test that asserts more than the item's existence
+  therefore depends on the English titles.
 
 ## When `MenuBarExtra` is not enough: `NSStatusItem`
 
@@ -213,12 +165,13 @@ not care about the name. In `ClaudeUsageBarApp`, the whole wiring is:
   out until you give it one: `pkill -x ClaudeUsageBar` is the stopgap (verified), a Quit control
   in the menu content is the fix. `NSApplication.shared.terminate(nil)` is AppKit, so it
   goes behind a Core port with a `ClaudeUsageBarPlatform` adapter like any other OS call — do not
-  import AppKit into `ClaudeUsageBarUI` for it.
+  import AppKit into `ClaudeUsageBarUI` for it. This app's is `ApplicationTerminating` /
+  `NSApplicationTerminator`, reached through `UsageMenuViewModel.quit()`.
 - **Settings.** ⌘, is gone with the app menu. Add a `Settings { SettingsView() }` scene
   beside the `MenuBarExtra` in the same `body` (a `Scene` builder takes both), put
   `SettingsView` in `ClaudeUsageBarUI`, and open it from the menu content with
-  `SettingsLink { … }` (macOS 14+, which this template already targets). The skeleton
-  above leaves both out — add them when the app has something to configure.
+  `SettingsLink { … }` (macOS 14+, which this template already targets). This app has
+  neither — add them when it has something to configure.
 - **Being noticed at all.** An agent app that launches and shows nothing is
   indistinguishable from one that crashed. Keep `just smoke` in the loop: it is the only
   gate that says the Release build stays alive, and it needs no change for this shape.

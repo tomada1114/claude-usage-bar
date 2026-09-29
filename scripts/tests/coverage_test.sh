@@ -28,10 +28,10 @@ write_fixture() {
     export CODECOV_FIXTURE="${CASE_DIR}/codecov.json"
     cat >"${CODECOV_FIXTURE}" <<JSON
 {"data": [{"files": [
-  {"filename": "/x/Sources/ClaudeUsageBarCore/Counter.swift", "summary": {
+  {"filename": "/x/Sources/ClaudeUsageBarCore/UsageSnapshot.swift", "summary": {
     "lines": {"covered": $1, "count": $2},
     "functions": {"covered": ${3:-1}, "count": ${4:-1}}}},
-  {"filename": "/x/Sources/ClaudeUsageBarUI/ContentView.swift", "summary": {
+  {"filename": "/x/Sources/ClaudeUsageBarUI/UsageMenu.swift", "summary": {
     "lines": {"covered": 0, "count": 50},
     "functions": {"covered": 0, "count": 50}}}
 ]}]}

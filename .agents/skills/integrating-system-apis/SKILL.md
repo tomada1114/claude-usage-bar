@@ -24,16 +24,17 @@ coverage floor that pushes work into Core (`changing-gates`).
 
 ## The shape, before any OS code
 
-Every integration is the same five pieces, and the template already ships one of each to
-copy — `docs/architecture.md` › "Ports and adapters" is the full description:
+Every integration is the same five pieces, and this app already has one of each to copy
+(`UsageFetching` / `URLSessionUsageFetcher` is a second set) — `docs/architecture.md` ›
+"Ports and adapters" is the full description:
 
 | Piece | Where | Worked example |
 |---|---|---|
-| Port: a `Sendable` protocol, value types in and out | `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/` | `FrontmostAppProviding.swift` |
-| Adapter: the OS framework import, translation only | `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarPlatform/` | `WorkspaceFrontmostAppProvider.swift` |
-| Fake: a real implementation answering from test data | `Tests/ClaudeUsageBarTestSupport/` | `FakeFrontmostAppProvider.swift` |
-| Local-machine test: the adapter against the real OS | `Tests/ClaudeUsageBarPlatformTests/` | `WorkspaceFrontmostAppProviderTests.swift` |
-| Contract: the port's promises, run against the fake and the adapter | `Tests/ClaudeUsageBarTestSupport/` | `FrontmostAppProvidingContract.swift` |
+| Port: a `Sendable` protocol, value types in and out | `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/` | `OAuthTokenProviding.swift` |
+| Adapter: the OS framework import, translation only | `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarPlatform/` | `SecurityCLITokenProvider.swift` |
+| Fake: a real implementation answering from test data | `Tests/ClaudeUsageBarTestSupport/` | `FakeOAuthTokenProvider.swift` |
+| Local-machine test: the adapter against the real OS | `Tests/ClaudeUsageBarPlatformTests/` | `SecurityCLITokenProviderTests.swift` |
+| Contract: the port's promises, run against the fake and the adapter | `Tests/ClaudeUsageBarTestSupport/` | `OAuthTokenProvidingContract.swift` |
 
 Write the port first. Its signature is where you decide what the OS type collapses into,
 and an adapter written before its port almost always leaks one: `CGEvent`, `AXUIElement`,
@@ -43,7 +44,8 @@ banned from `ClaudeUsageBarCore` by `.swiftlint.yml`'s `no_ui_import_in_core` an
 
 Put the isolation in the port too. Nearly every OS mechanism here is bound to one run
 loop, so declaring the port's methods `@MainActor` states that once, instead of leaving
-each adapter to justify an `assumeIsolated` of its own.
+each adapter to justify an `assumeIsolated` of its own — as
+`ApplicationTerminating.terminate()` does for `NSApplication`.
 
 ## Choosing the mechanism
 

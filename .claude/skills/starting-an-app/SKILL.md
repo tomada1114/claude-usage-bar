@@ -107,10 +107,11 @@ leftover grep is case-insensitive and allows a missing hyphen, so a new mention 
 app name in a spelling the literal replace does not cover (all lowercase, say) fails
 that job.
 
-The rename leaves the example code in place: the counter and the `FrontmostApp`
-port/adapter are illustrations, not the app. Removing or replacing them is one
-checklist, `docs/getting-started.md` › "Removing the example code", which both
-`README.md` and the script's next steps point to.
+The rename leaves the template's example code in place: it is illustration, not the
+app. Removing or replacing it is the step `docs/getting-started.md` › "Removing the
+example code" covers, which both `README.md` and the script's next steps point to; in
+this repository that step is done, and the section names the app code that now serves as
+the pattern to copy.
 
 ## Filling in the Product section
 
@@ -136,8 +137,9 @@ The template ships one shape: a regular windowed app. A menu-bar agent — no Do
 is three files' difference, and deciding it before the first feature costs far less than
 retrofitting it afterwards. [references/app-shapes.md](references/app-shapes.md) holds
 both shapes side by side: the `project.yml` keys, the `App/` entry point, and the
-`LaunchTests` assertion each one needs, as code proven against `just build`,
-`just uitest`, and `just smoke`, plus what XCUITest can and cannot see of a status item.
+`LaunchTests` assertion each one needs — this app's own files being the menu-bar agent
+reference, held by `just build`, `just uitest`, and `just smoke` — plus what XCUITest can
+and cannot see of a status item.
 
 ## Deciding the sandbox posture
 

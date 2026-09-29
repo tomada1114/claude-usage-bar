@@ -35,8 +35,8 @@ per-screen one.
   `.footnote`) with the system font. macOS has no Dynamic Type, but system fonts still
   respond to the system's accessibility features; a custom font must be made to do the
   same, and it ships as a bundled resource with a license to check. A size given in
-  points (`ContentView`'s counter value) is a deliberate display exception, named in the
-  view's private `Layout` enum, never a body-text choice.
+  points (`UsageBadge`'s digits, sized to sit beside menu bar text) is a deliberate display
+  exception, named in the view's private `Layout` enum, never a body-text choice.
 - **Color:** use semantic colors — `.primary`, `.secondary`, `Color.accentColor`, the
   dynamic system colors — for their stated purpose. Never hard-code a system color's
   value, and never repurpose one (a separator color as text). A custom color is a Color
@@ -71,9 +71,10 @@ per-screen one.
 
 ## Windows and layout
 
-- A window sets a minimum size its content survives — `ContentView`'s
+- A window sets a minimum size its content survives — the root view's
   `.frame(minWidth:minHeight:)` from its `Layout` enum — and the layout adapts from there
-  up. Nothing overlaps or clips at the minimum; nothing stretches into an unreadable
+  up. This app has no window: its `.menu`-style `MenuBarExtra` is a native menu the
+  system sizes. Nothing overlaps or clips at the minimum; nothing stretches into an unreadable
   line length at full screen (cap a text column's width instead).
 - Align to a small spacing scale fixed in the lock, and let alignment and indentation
   carry hierarchy before color or weight does.

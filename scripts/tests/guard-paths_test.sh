@@ -96,7 +96,7 @@ case_other_xcconfigs_allowed() {
 case_public_and_ordinary_files_allowed() {
     expect_allowed App/ClaudeUsageBar.entitlements cert.cer Signing/Request.certSigningRequest \
         Slides.key Package.resolved README.md cert.pem \
-        Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/CounterViewModel.swift
+        Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/UsageMenuViewModel.swift
 }
 
 run_case "every .env and .env.* is blocked" case_env_files_blocked

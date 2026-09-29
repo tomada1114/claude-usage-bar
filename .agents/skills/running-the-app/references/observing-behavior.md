@@ -1,9 +1,11 @@
 # Observing behavior with no human at the keyboard
 
 Three ways to watch a running build: a screenshot, a throwaway UI test that drives a
-flow, and a launch that starts the app in a known state. Every command here was run
-against this template's own app. Write every artifact to a scratch directory outside the
-checkout — nothing below belongs in a commit.
+flow, and a launch that starts the app in a known state. The commands were verified on a
+windowed build; this app is a menu-bar agent (`LSUIElement`,
+`docs/architecture/adr/0001-app-shape.md`), and each section says where that changes
+things. Write every artifact to a scratch directory outside the checkout — nothing below
+belongs in a commit.
 
 ## Screenshot
 
@@ -50,19 +52,21 @@ so it belongs in the single up-front ask. A denied grant is worse than an error:
 capture still succeeds and still writes a PNG, showing the desktop where the windows
 should be. Look at the file you wrote before believing it.
 
-A menu-bar-only app (`LSUIElement`, `MenuBarExtra` — **BACKGROUND:** `starting-an-app`)
-has no ordinary window to capture until its menu is open, and opening that menu is a
-click only a human or an accessibility grant can make. Prefer a log line or a Core test
-for such a build, and fall back to a full-screen capture with the menu already open.
+This app is menu-bar-only (`LSUIElement`, `MenuBarExtra` — **BACKGROUND:**
+`starting-an-app`), so the snippet above prints nothing for it: it has no ordinary window
+to capture until its menu is open, and opening that menu is a click only a human or an
+accessibility grant can make. Prefer a log line, a `#Preview`, or a Core test, and fall
+back to a full-screen capture with the menu already open.
 
 ## Drive a flow with a throwaway XCUITest
 
 `LaunchUITests/` is the only XCTest target (`project.yml`'s `ClaudeUsageBarLaunchUITests`, whose
 `sources: [LaunchUITests]` takes the whole directory), so a probe is one file plus
-`just generate`. The app already carries accessibility identifiers for every control —
-`counterValue`, `incrementButton`, `decrementButton`, `resetButton`, `frontmostAppLabel`
-(`Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarUI/ContentView.swift`) — and a new control needs one
-before it can be driven at all.
+`just generate`. This app's menu is `.menuBarExtraStyle(.menu)`, which drops a SwiftUI
+accessibility identifier on its entries: a probe finds the status item as
+`app.menuBars.statusItems.firstMatch` and each menu entry by its title, exactly as
+`LaunchUITests/LaunchTests.swift` does. A windowed screen would instead give each control
+an accessibility identifier before it can be driven at all.
 
 ```swift
 // LaunchUITests/ScratchProbeTests.swift — throwaway, never committed
@@ -72,25 +76,24 @@ final class ScratchProbeTests: XCTestCase {
     @MainActor
     func testProbe() {
         let app = XCUIApplication()
-        app.launchArguments += ["-counterStart", "5"]
-        app.launchEnvironment["PROBE_STATE"] = "known-state"
         app.launch()
-        app.buttons["incrementButton"].click()
-        app.buttons["incrementButton"].click()
-        let shot = XCTAttachment(screenshot: app.screenshot())
-        shot.name = "after-two-increments"
+        let statusItem = app.menuBars.statusItems.firstMatch
+        XCTAssertTrue(statusItem.waitForExistence(timeout: 10))
+        statusItem.click()
+        XCTAssertTrue(app.menuItems["Quit ClaudeUsageBar"].waitForExistence(timeout: 5))
+        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        shot.name = "menu-open"
         shot.lifetime = .keepAlways
         add(shot)
-        // macOS exposes a SwiftUI Text's string as `value` (sometimes `label`) and
-        // updates it asynchronously — wait on a predicate covering both, exactly as
-        // LaunchUITests/LaunchTests.swift does, instead of reading `.value` right away.
-        let counter = app.staticTexts["counterValue"]
-        let showsTwo = NSPredicate(format: "label == '2' OR value == '2'")
-        let updated = XCTNSPredicateExpectation(predicate: showsTwo, object: counter)
-        XCTAssertEqual(XCTWaiter.wait(for: [updated], timeout: 5), .completed)
+        app.typeKey(.escape, modifierFlags: [])
     }
 }
 ```
+
+The probe captures the whole screen (`XCUIScreen.main.screenshot()`), because what there
+is to see is the open menu, not a window. Its queries are the ones `LaunchTests.swift`
+runs; the screenshot step has not been run against this app, so look at the attachment
+before believing it, as with `screencapture`.
 
 Run that one test, keeping the result bundle out of the way of `just uitest`'s own:
 
@@ -103,7 +106,7 @@ xcrun xcresulttool export attachments --path build/Probe.xcresult --output-path 
 ```
 
 The export writes each attachment under a UUID file name plus a `manifest.json` that
-maps it back to `suggestedHumanReadableName` ("after-two-increments_0_….png") and the
+maps it back to `suggestedHumanReadableName` ("menu-open_0_….png") and the
 test it came from — read the manifest, then look at the PNG. `just uitest` runs the whole
 scheme (the launch guarantee included) and writes `build/LaunchUITests.xcresult`; use it
 when you want both, `-only-testing:` while iterating.
@@ -120,13 +123,14 @@ Two rules about the probe:
 
 ## Start the app in a known state
 
-Nothing in this template reads a launch argument or an environment variable today:
-`CounterViewModel` always starts at zero, and no `App/` or `ClaudeUsageBarCore` code consults
-`UserDefaults` or `ProcessInfo`. The two snippets above pass `-counterStart 5` and
-`PROBE_STATE` to prove the plumbing, not because the app answers them. **Do not add such
-a hook to the app just to observe it** — a state you only need to *look at* is a state a
-Core test can construct directly, by handing `ContentView` a view model, exactly as its
-`#Preview("At the upper bound")` does.
+Nothing in this app reads a launch argument or an environment variable today:
+`UsageMenuViewModel` starts from an empty `UsageState`, and no `App/` or
+`ClaudeUsageBarCore` code consults `UserDefaults` or `ProcessInfo`. The snippet below
+passes `-probeState` and `PROBE_STATE` to prove the plumbing, not because the app answers
+them. **Do not add such a hook to the app just to observe it** — a state you only need to
+*look at* is a state a preview or a Core test can construct directly, by building a
+`UsageState`, exactly as `UsageMenu.swift`'s `#Preview("Stale numbers after a failure")`
+and `#Preview("Not signed in")` do.
 
 When a hook is genuinely warranted — a state that is expensive or impossible to reach by
 hand, wanted from both a UI probe and by hand — this is the mechanism, verified against a
@@ -134,7 +138,7 @@ running build:
 
 ```bash
 open --env PROBE_STATE=known-state -n \
-  build/dev-derived-data/Build/Products/Debug/ClaudeUsageBar.app --args -counterStart 5
+  build/dev-derived-data/Build/Products/Debug/ClaudeUsageBar.app --args -probeState known-state
 ps -o command= -p "$(pgrep -f 'Debug/ClaudeUsageBar.app/Contents/MacOS/ClaudeUsageBar' | head -1)"
 ```
 

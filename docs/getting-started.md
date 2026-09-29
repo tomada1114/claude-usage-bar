@@ -90,65 +90,22 @@ That drops your own grants for it, so the next launch prompts from scratch.
 
 ## Removing the example code
 
-The template ships two examples, and both are illustrations for a new app to
-replace or delete — example code in a skill or a doc is likewise a sketch of
-the pattern, never something the app must keep. Work through this list after
-`scripts/bootstrap.sh` (the paths below carry your app's name once it has run),
-then run `just check`.
+The template's two examples — a counter screen and a ports-and-adapters example that
+read the frontmost app — were removed when this app was started. What replaced them is
+the pattern to copy now:
 
-**The counter** (the app's single screen):
+- the menu-bar agent in `App/ClaudeUsageBarApp.swift`, rendering `UsageMenu` and
+  `UsageBadgeLabel` over Core's `UsageMenuViewModel`
+  (`docs/architecture/adr/0001-app-shape.md`);
+- the ports `OAuthTokenProviding` and `UsageFetching`, with their adapters
+  `SecurityCLITokenProvider` and `URLSessionUsageFetcher`, their fakes and contract
+  suites in `ClaudeUsageBarTestSupport`, and their local-machine tests
+  (`docs/architecture.md` › Ports and adapters);
+- `LaunchUITests/LaunchTests.swift`, which asserts the status item and its Quit menu
+  item rather than a window.
 
-- [ ] `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/Counter.swift` and
-      `CounterViewModel.swift` — replace with your domain model and view model
-- [ ] `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarCoreTests/CounterTests.swift` and
-      `CounterViewModelTests.swift` — replace with tests for your Core code, so
-      the 80% coverage floor still has something to measure
-- [ ] `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarUI/ContentView.swift` — the counter text,
-      the three buttons, their accessibility identifiers, and both previews
-- [ ] `LaunchUITests/LaunchTests.swift` — `testAppLaunchesAndShowsCounter`
-      clicks `incrementButton` and reads `counterValue`; point it at an element
-      your first screen shows
-- [ ] `AGENTS.md` and `CONTRIBUTING.md` — the `just test-fast CounterTests`
-      examples; `.agents/skills/running-the-app/references/observing-behavior.md`
-      — the identifier list and the `-counterStart` snippets (edit the skill under
-      `.agents/skills/`, then `just agents-sync`)
-
-**The `FrontmostApp` example** (the worked ports-and-adapters example — keep it
-until your first real port exists if you want a pattern to copy):
-
-- [ ] The port: `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/FrontmostAppProviding.swift`
-- [ ] Its view model: `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/FrontmostAppViewModel.swift`
-- [ ] The adapter: `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarPlatform/WorkspaceFrontmostAppProvider.swift`
-- [ ] The Core tests: `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarCoreTests/FrontmostAppViewModelTests.swift`,
-      `FrontmostAppProvidingContractTests.swift` beside it, and the `FakeFrontmostAppProvider`
-      cases in `everyCase()` in `LocalizationTests.swift`
-- [ ] The fake and the contract: `FakeFrontmostAppProvider.swift` and
-      `FrontmostAppProvidingContract.swift` in `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarTestSupport`
-      (keep the target for your own port's fake and contract, or remove it from
-      `Package.swift` and both test targets' dependencies once nothing is left in it)
-- [ ] The local-machine test:
-      `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarPlatformTests/WorkspaceFrontmostAppProviderTests.swift`
-      (if it was the last test there, keep the target with a test of your own
-      adapter, or remove the target from `Package.swift` together with its
-      `just test-local` references)
-- [ ] `AppLog.frontmostApp` in `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/AppLog.swift`,
-      plus the doc comment there that points at `FrontmostAppViewModel/refresh()`
-      — add a `Logger` for your own concern instead
-- [ ] The `ContentView` row: the `frontmostApp` property, its `init` parameter,
-      the `Frontmost:` label (`frontmostAppLabel`), and the `scenePhase`
-      refresh in `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarUI/ContentView.swift`
-- [ ] The composition root: the `FrontmostAppViewModel(provider:
-      WorkspaceFrontmostAppProvider())` argument in `App/ClaudeUsageBarApp.swift`
-- [ ] The mentions that cite it as the worked example: `AGENTS.md` ›
-      Architecture ("The worked example is `FrontmostAppProviding` /
-      `WorkspaceFrontmostAppProvider`"), `docs/architecture.md` › Ports and
-      adapters and › Logging, `.claude/rules/testing.md` › Fakes, not mocks and
-      › One Contract Suite per Port, and the skills `integrating-system-apis`,
-      `running-the-app`, and `starting-an-app/references/app-shapes.md` — point
-      them at your own port, or reword them (skills are edited under
-      `.agents/skills/`, then `just agents-sync`)
-
-`rg -i 'counter|frontmost'` then lists anything left.
+Example code in a skill or a doc is a sketch of the pattern, never something the app
+must keep.
 
 ## Open in Xcode
 

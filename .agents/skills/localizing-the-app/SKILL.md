@@ -35,14 +35,15 @@ English-only rule and its one exception (`AGENTS.md`'s "Important Reminders").
 
 ## Declaring a string
 
-`FrontmostAppViewModel.label` is the worked example:
+`UsagePresentation.weeklyUsage` is the worked example:
 
 ```swift
-LocalizedStringResource(
-    "frontmostApp.label",
-    defaultValue: "Frontmost: \(name)",
+let value = formatter.percent(percent)
+return LocalizedStringResource(
+    "menu.weekly",
+    defaultValue: "Weekly: \(value)",
     bundle: .module,
-    comment: "Footnote naming the application that is frontmost. The argument is that application's name.",
+    comment: "Menu line for the weekly usage limit. The argument is a formatted percentage, such as 76%.",
 )
 ```
 
@@ -54,15 +55,15 @@ Every part is there for a reason:
 - **`defaultValue`.** `swift test` (`just test`) builds with SwiftPM's native build
   system, which copies the `.xcstrings` into Core's bundle uncompiled, so the English a
   test sees comes from here. Without it a test would see the key.
-- **An explicit key**, `feature.purpose` (`counter.reset`, `frontmostApp.unavailable`),
+- **An explicit key**, `feature.purpose` (`menu.quit`, `failure.notSignedIn`),
   not the English text: the English can be polished without re-keying every translation,
   and a key is something a test and a search can name.
 - **`comment`** is a translator's only context: where the text appears and what each
   argument is.
-- **One whole sentence per state**, with arguments interpolated (`\(name)` becomes `%@`,
+- **One whole sentence per state**, with arguments interpolated (`\(value)` becomes `%@`,
   an `Int` becomes `%lld`), never a fixed prefix glued to a swapped-in fragment: a
   translation must be free to reorder the sentence around its arguments.
-- **A computed property**, as `label` and `CounterViewModel.resetTitle` are: the
+- **A computed property**, as `weeklyUsage` and `UsagePresentation.quitTitle` are: the
   initializer's `locale` defaults to `.current` when the resource is built, so each read
   builds it afresh.
 - **No generated symbols.** `xcodebuild` runs `GenerateStringSymbols` over the catalog, but
@@ -74,12 +75,12 @@ Every part is there for a reason:
 - A view has no localizable literal. `Text("…")` and `Button("…")` take a
   `LocalizedStringKey` that is looked up in the app's main bundle, not the package's, and
   `-exportLocalizations` exports it under a `ClaudeUsageBarUI` strings file that has nowhere to
-  ship. Render a Core resource instead: `Text(frontmostApp.label)`,
-  `Button(CounterViewModel.resetTitle) { model.reset() }`.
+  ship. Render a Core resource instead: `Text(presentation.weeklyUsage)`,
+  `Button(UsagePresentation.quitTitle, action: quit)`.
 - What is not language is `Text(verbatim:)`: a number (formatted in Core with an injected
-  `Locale` when formatting matters), a glyph such as `ContentView`'s "−" and "+" (whose
-  `.accessibilityLabel` is still a Core resource, `CounterViewModel.decrementLabel`), and a
-  preview's note to the developer.
+  `Locale` when formatting matters), a glyph, and a preview's note to the developer.
+  `UsageBadge` renders the badge's digits with `Text(verbatim:)`, and its
+  `.accessibilityLabel` is still a Core resource, `badgeAccessibilityLabel`.
 - Accessibility identifiers are never localized (`building-swiftui-screens`).
 
 ## Keeping the catalog in step

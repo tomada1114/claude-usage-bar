@@ -63,11 +63,11 @@ reading as a broken adapter.
 
 The expected value comes from somewhere other than the code under test: a literal worked
 out by hand, a case table in `@Test(arguments:)` pairing each input with its answer, or
-an invariant that must hold whatever the input (the value stays inside `range`, a
+an invariant that must hold whatever the input (the value stays inside its bounds, a
 round-trip returns what went in). Never compute it by calling the implementation, and
-never re-derive it with the implementation's own formula: after `increment()` from 99,
-`#expect(counter.value == min(99 + 1, counter.range.upperBound))` passes with any bug
-the formula shares, where `#expect(counter.value == 100)` does not.
+never re-derive it with the implementation's own formula: for a utilization of `75.5`,
+`#expect(window.percent == Int(75.5.rounded()))` passes with any rounding bug the
+formula shares, where `UsageWindowTests`' case table pairing `75.5` with `76` does not.
 
 ## Fakes, not mocks
 
@@ -77,7 +77,8 @@ working implementation of the protocol that lives in `Tests/ClaudeUsageBarTestSu
 from data the test hands it, and records what it was asked in a plain value — a call
 count, or the arguments it received — which the test reads afterwards with `#expect`.
 It declares no expectations up front, verifies nothing itself, and needs no framework:
-`FakeFrontmostAppProvider.swift` there is the worked example to copy. It is `package`,
+`FakeOAuthTokenProvider.swift` and `FakeUsageFetcher.swift` there are the worked
+examples to copy. It is `package`,
 not `public`, and `Sendable` the honest way — a lock around what it records, never
 `@unchecked Sendable`. Every test of a given port uses that one fake, so the port's test-time
 behavior is defined in one place rather than re-stubbed per test. Asserting on the
@@ -90,22 +91,26 @@ produced, not on the interaction that produced it.
 A fake stands in for the adapter only while both keep the port's promises, so those
 promises are asserted once, against both. The contract suite is a function over the
 protocol, not over either implementation, and every clause it checks is one the port's
-`///` states (add the clause there first). `FrontmostAppProviding` is the worked example:
+`///` states (add the clause there first). `OAuthTokenProviding` is the worked example,
+and `UsageFetching` follows the same shape:
 
 - The fakes and one contract function per port live in the `ClaudeUsageBarTestSupport` target
   (`Tests/ClaudeUsageBarTestSupport`), which both test targets depend on — never one test target
   depending on another. It is test code: no product exports it, and
   `ArchitectureBoundaryTests` fails if a shipped module imports it.
-- `FrontmostAppProvidingContract.check(_:)` takes `some FrontmostAppProviding` and
-  asserts with `#expect` that every non-`nil` answer carries a non-empty `name`, asking
-  more than once. Its `violations(of:)` returns what `check(_:)` asserts on, so a Core
-  test hands it a provider that breaks a clause and sees the contract report it — the
-  proof the contract is not vacuous.
-- `FrontmostAppProvidingContractTests` in `ClaudeUsageBarCoreTests` runs it against the fake:
+- `OAuthTokenProvidingContract.check(_:)` takes `some OAuthTokenProviding` and asserts
+  with `#expect`, asking more than once, that every token it answers is non-blank and
+  that it throws only the errors about reading the token — never one only a fetch may
+  throw. Its `violations(of:)` returns what `check(_:)` asserts on, so a Core test hands
+  it a provider that breaks a clause and sees the contract report it — the proof the
+  contract is not vacuous.
+- `OAuthTokenProvidingContractTests` in `ClaudeUsageBarCoreTests` runs it against the fake:
   CI runs it, so the fake cannot drift from the port.
-- `WorkspaceFrontmostAppProviderTests` in `ClaudeUsageBarPlatformTests`, a `.requiresLocalMachine`
-  suite, runs the same function against `WorkspaceFrontmostAppProvider` beside its
-  translation test (`just test-local`).
+- `SecurityCLITokenProviderTests` in `ClaudeUsageBarPlatformTests`, a `.requiresLocalMachine`
+  suite, runs the same function against `SecurityCLITokenProvider` beside its
+  translation tests (`just test-local`).
+- A port whose one promise no test can observe needs no contract suite, and says why in
+  its `///`: `ApplicationTerminating` promises that the process ends.
 
 ## Edge Cases (always consider these)
 
