@@ -61,8 +61,7 @@ implementation the app gets (`docs/architecture.md`). The 80% line-coverage floo
 applies to Core only — that is what makes a
 strict numeric gate *honest* for a GUI app instead of an invitation to write
 meaningless view tests. Note: Swift's llvm-cov has no dependable branch
-metric, so the gate uses line coverage (a deliberate divergence from this
-template's Python sibling, which gates on branch coverage).
+metric, so the gate uses line coverage.
 
 ### Why Swift Testing?
 

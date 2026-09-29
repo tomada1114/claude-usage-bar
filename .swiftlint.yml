@@ -1,5 +1,5 @@
 # Strict from day one — warnings are errors, every opt-in rule enabled,
-# each disable below carries a one-line reason (mirror of uv-template's ruff config).
+# each disable below carries a one-line reason.
 strict: true
 
 opt_in_rules:

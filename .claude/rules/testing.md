@@ -64,7 +64,7 @@ produced, not on the interaction that produced it.
 - **Boundary values**: values at, just inside, and just outside every bound
 - **Repeated operations**: idempotence at bounds (clamp twice, reset twice)
 - **State transitions**: initial state, after one operation, after error recovery
-- **Both branches** of every conditional in Core (the coverage floor will notice if you don't)
+- **Both branches** of every conditional in Core (the coverage floor measures lines, not branches, so it will not notice a missed one — write the test for each branch yourself)
 
 ## Hygiene
 

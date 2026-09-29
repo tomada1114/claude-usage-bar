@@ -140,7 +140,7 @@ the user's consent.
 
 `project.yml` sets `GENERATE_INFOPLIST_FILE: YES`, so there is no `Info.plist`
 to hand-edit: a privacy string is an `INFOPLIST_KEY_NS…UsageDescription` build
-setting on the `MyApp` target, next to the ones already there.
+setting on the `MyApp` target (`project.yml` declares none yet).
 
 ```yaml
 targets:

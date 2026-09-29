@@ -86,9 +86,9 @@ Generate a title in Conventional Commits format:
 
 **Rules:**
 - Analyze commits to select the most appropriate type
-- Types: `feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `chore`, `perf`,
-  `build`, `deps` (dependency bumps only — same list as smart-commit and
-  check-pr-title.yml)
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`,
+  `ci`, `chore`, `revert`, `deps` (dependency bumps only) — the list
+  check-pr-title.yml accepts, shared with smart-commit
 - If multiple types are mixed: use the type of the most significant change
 - Keep under 70 characters
 - Scope is optional (e.g., `core`, `ui`, `app`)

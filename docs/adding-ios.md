@@ -1,10 +1,11 @@
 # Adding iOS Later
 
-The template is macOS-only on purpose, but it is structured so iOS is an
-addition, not a rewrite: `MyAppCore` imports only Observation and is already
-platform-agnostic, and `MyAppUI` is plain SwiftUI. `MyAppPlatform` is the macOS-only
-module by design: an iOS target links `MyAppUI` and supplies its own adapters for the
-Core ports it needs, and Core is unchanged either way.
+The template is macOS-only on purpose, but it is structured so iOS is an addition,
+not a rewrite: `MyAppCore` imports only Observation and `os` (for logging), both
+available on iOS, and is already platform-agnostic, and `MyAppUI` is plain SwiftUI.
+`MyAppPlatform` is the macOS-only module by design: an iOS target links `MyAppUI` and
+supplies its own adapters for the Core ports it needs, and Core is unchanged either
+way.
 
 ## Runbook
 

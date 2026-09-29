@@ -1,4 +1,4 @@
-# Pinned CLI tool versions — the reproducibility analog of uv's lockfile for dev tools.
+# Pinned CLI tool versions — the dev-tool analog of a lockfile.
 # Never use "latest" or bump by hand: Renovate opens the bump PRs (policy: .claude/rules/project.md, Toolchain Pinning).
 [tools]
 xcodegen = "2.46.0"

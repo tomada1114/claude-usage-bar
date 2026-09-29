@@ -6,8 +6,10 @@ paths:
 
 ## Design
 
-- Keep modules under 300 lines; one logical concern per file
-- Keep functions under 40 lines; prefer 3 or fewer parameters (group related params in a struct)
+- One logical concern per file. SwiftLint enforces its default limits under `strict: true`
+  (warnings fail): a file over 400 lines (`file_length`), a function body over 50 lines
+  (`function_body_length`), or more than 5 parameters (`function_parameter_count`) fails
+  `just lint` — group related parameters in a struct long before that
 - Value types first: reach for `struct`/`enum`; use `class` only for identity or reference semantics
 - `MyAppCore` must never import SwiftUI, AppKit, UIKit, Cocoa, ApplicationServices, Carbon,
   or ServiceManagement — it stays platform-agnostic (enforced by `.swiftlint.yml`'s

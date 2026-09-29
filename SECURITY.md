@@ -14,13 +14,13 @@ Include:
 - Affected versions
 - Suggested fix (if available)
 
-## Response Timeline
+## Response
 
-| Action | Timeline |
-|---|---|
-| Acknowledgment | Within 48 hours |
-| Initial assessment | Within 7 days |
-| Fix release | Best effort, typically within 30 days |
+This project is maintained on a best-effort basis and makes no guaranteed response
+time. Reports are acknowledged and assessed as maintainer time allows, and a fix
+ships in the next release once one is ready. A repository created from this
+template should replace this section with the commitments its own maintainers
+can keep.
 
 ## Supported Versions
 
