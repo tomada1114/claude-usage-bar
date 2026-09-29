@@ -342,6 +342,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The `changing-gates` and `smart-commit` skills are back under the 200-line `SKILL.md`
+  body cap: the `.swiftlint.yml` custom-rule detail, the `scripts/guard/` pattern list,
+  and the workflow conventions move to `changing-gates/references/`, and the pre-commit
+  hook recovery steps to `smart-commit/references/`, each linked from the body with no
+  rule dropped (#166).
+
 - `.github/dependabot.yml` groups minor and patch updates per ecosystem (SwiftPM and
   GitHub Actions), so one upstream release arrives as one PR; majors still get their
   own PR, and the 7-day cooldown is unchanged.

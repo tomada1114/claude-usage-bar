@@ -65,42 +65,13 @@ a reason when only one site needs the exception — a global disable widens the 
 every future file. Repository-specific rules live under `custom_rules:`; there are two.
 
 `no_ui_import_in_core` keeps `MyAppCore` from importing a UI or OS-integration
-framework — SwiftUI, AppKit, UIKit, Cocoa, ApplicationServices, Carbon, and
-ServiceManagement — attributed and kind-qualified spellings included;
-`ArchitectureBoundaryTests` in
-`MyAppCoreTests` enforces the same boundary a second way. Its module list and the
-test's `forbiddenModules` change together, in one commit — adding a framework to one
-and not the other leaves the boundary enforced once. Adding to that list strengthens
-the gate and is the routine direction; removing from it is weakening one. `os` and
-`OSLog` are deliberately not on it, so Core can log (`docs/architecture.md` › Logging);
-a test case pins their absence. Its
-`included` regex names the
-package and module, so a new Core-like target means widening it and the test's path.
-The sibling boundary — `MyAppUI` and `MyAppPlatform` never importing each other — is
-held by `ArchitectureBoundaryTests` alone, with no lint-rule twin.
-
-`no_print_in_sources` rejects `print(`, `debugPrint(`, and `NSLog(` under
-`Packages/*/Sources/` and `App/`, because an `open`-launched `.app` discards stdout:
-shipped code logs through `MyAppCore`'s `AppLog` instead (`.claude/rules/swift.md` ›
-Logging). Four parts of it are load-bearing, and a widening edit usually breaks one:
-
-- `match_kinds: [identifier]` spares a `print(` inside a comment or a string literal —
-  only a real call site is an identifier;
-- `[^\w.]` before the name spares `blueprint(` and member calls like `.print()`;
-- `included` and `excluded` are substring matches against the *whole* path, never
-  repository-relative globs, so both are written to survive any ancestor directory.
-  `App/[^/]+\.swift$` allows exactly one component after `App/`, because the shell is
-  flat; `Packages/[^/]+/Sources/[^/]+/.+\.swift$` requires a module directory, so
-  `Packages/*/Tests/` cannot satisfy it. Loosen either and a checkout under `~/App/` —
-  or under any path with that shape, which `scripts/bootstrap.sh` readily produces —
-  starts matching test files;
-- `excluded: '(^|/)[A-Za-z0-9]*Tests/'` is the second line of defence for the same
-  worry: no `*Tests/` directory is ever linted by this rule. Test code prints freely.
-
-Matching a path *suffix* rather than a repository-relative path is also what keeps the
-rule firing over the temp tree the pre-commit hook exports with
-`git checkout-index --prefix=`. It catches a call site, not a deliberate bypass:
-`Swift.print(` is out of its reach and is PR review's to catch.
+framework, and its module list changes together with `ArchitectureBoundaryTests`'
+`forbiddenModules` in one commit; `no_print_in_sources` rejects `print(`,
+`debugPrint(`, and `NSLog(` in shipped sources. Before editing either
+rule, read [references/swiftlint-custom-rules.md](references/swiftlint-custom-rules.md):
+the full module list and why `os`/`OSLog` stay off it, the sibling boundary held by
+the test alone, and the four load-bearing parts of `no_print_in_sources` a widening
+edit usually breaks.
 
 `analyzer_rules` is deliberately absent: those run only under
 `swiftlint analyze` with a compiler log, which no gate here invokes. `trailing_comma`
@@ -183,21 +154,11 @@ passes with `scripts/guard/credentials.sh`. Staged deletions are never inspected
 cannot add a secret, and blocking one would block the commit that removes a secret.
 Those two files are the list — read them for exactly what is checked:
 
-- **Blocked by path:** `.env`, `.env.*`, and `.envrc.*` (except
-  `.example`/`.sample`/`.template`), `.claude/settings.local.json`,
-  any `secrets` path segment, signing material and credential files (`.p12`,
-  `.pfx`, `.p8`, provisioning profiles, keychains, `*key*.pem`, `.netrc`,
-  `credentials.json`, `secrets.json`, `private-key.*`), and `Local.xcconfig` — the
-  per-machine Debug signing identity `Config/Debug.xcconfig` optionally includes,
-  which is gitignored as well.
-- **Blocked by content:** literal patterns for a PEM private-key header, GitHub tokens,
-  AWS access key ids, an AWS secret access key assigned to its variable name,
-  Anthropic and OpenAI API keys, Slack tokens, Google API keys, Stripe live keys (not
-  test keys), and JWTs. It prints the category, never the matched text.
-- **Deliberately not blocked:** `.cer` and `.certSigningRequest` (public), `.key`
-  (collides with Keynote documents), a regenerated `Package.resolved`, and anything
-  that needs judgment rather than a pattern — no entropy heuristic. Whether a commit
-  *should* contain what it contains stays in PR review.
+Before adding, removing, or loosening a path or content rule, read
+[references/guard-patterns.md](references/guard-patterns.md): what is blocked by path,
+what by content (the category is printed, never the matched text), and what is
+deliberately not blocked — including why whether a commit *should* contain what it
+contains stays in PR review.
 
 A new pattern starts from a real false negative and lands with a fixture case in
 `scripts/tests/guard-paths_test.sh` or `scripts/tests/guard-credentials_test.sh`.
@@ -216,22 +177,12 @@ layers".
 and build of the renamed app), and `zizmor` (workflow security lint). Which layer holds
 what is `AGENTS.md`'s "Enforcement layers" table; read it rather than re-deriving it.
 
-Conventions every workflow here follows, which `actionlint` (in `scripts/lint.sh`) and
-the `zizmor` job partly check and review holds for the rest:
-
-- every `uses:` of a remote action is pinned to a full commit SHA with a trailing
-  `# vX.Y.Z` comment; a local `./.github/actions/…` action is exempt;
-- a top-level `permissions:` as narrow as the work allows, and every job has a
-  `timeout-minutes`;
-- `actions/checkout` runs with `persist-credentials: false`;
-- a new check goes into an existing job unless it needs a different runner, trigger, or
-  permission footprint. Widening `permissions:` or adding a workflow that writes is a
-  security-relevant change that needs sign-off, not a routine CI edit.
-- a job's `name:` is what `.github/rulesets/main.json` requires as a status-check
-  context, so renaming, removing, or re-triggering a job means editing that file in the
-  same change; `scripts/checks/ruleset-contexts.sh` (`just check-harness`) fails while a
-  required context matches no job in a `pull_request` workflow, and `just ruleset` then
-  pushes the edited ruleset to the live repository (sign-off first).
+Every workflow follows a set of conventions — remote `uses:` pinned to a full SHA,
+a narrow top-level `permissions:`, `persist-credentials: false`, and job names kept in
+step with `.github/rulesets/main.json`. Widening `permissions:` or adding a workflow
+that writes needs sign-off. Before editing a workflow, read
+[references/workflow-conventions.md](references/workflow-conventions.md) for the full
+list and which of it `actionlint`, `zizmor`, and `just check-harness` check.
 
 ## What no gate here sees
 
