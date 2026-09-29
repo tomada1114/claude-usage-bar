@@ -31,11 +31,14 @@ public struct ContentView: View {
             HStack {
                 Button("−") { model.decrement() }
                     .disabled(!model.canDecrement)
+                    // The glyph is not a name: VoiceOver reads the label instead.
+                    .accessibilityLabel("Decrement")
                     .accessibilityIdentifier("decrementButton")
                 Button("Reset") { model.reset() }
                     .accessibilityIdentifier("resetButton")
                 Button("+") { model.increment() }
                     .disabled(!model.canIncrement)
+                    .accessibilityLabel("Increment")
                     .accessibilityIdentifier("incrementButton")
             }
             if let frontmostApp {

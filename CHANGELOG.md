@@ -446,6 +446,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   line-coverage floor notices a missed branch; `.claude/rules/swift.md` states the
   SwiftLint limits actually enforced; `.github/zizmor.yml` no longer hard-codes a use
   count; `SECURITY.md` drops response times a template cannot promise
+- `ContentView`'s `−` and `+` buttons now carry the accessibility labels "Decrement"
+  and "Increment", so VoiceOver no longer reads the bare glyph.
 
 - `.claude/settings.json`'s `PostToolUse` hook now formats only the `.swift` file an
   `Edit`/`Write`/`MultiEdit` touched, through `scripts/format-edited-file.sh`, instead of
