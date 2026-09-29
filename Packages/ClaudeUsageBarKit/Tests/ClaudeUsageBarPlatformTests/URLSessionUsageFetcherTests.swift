@@ -12,11 +12,14 @@ import Testing
 struct URLSessionUsageFetcherTests {
     static let fetcher = URLSessionUsageFetcher(timeout: Tuning.default.requestTimeout)
 
+    /// The endpoint answers an invalid token with 401, or with 429 once it has seen a few
+    /// in a row (observed 2026-09-29) — either way an HTTP answer the adapter must pass on
+    /// rather than throw, and one Core reads as a failure.
     @Test
-    func `an invalid token gets an HTTP answer Core reads as expired`() async throws {
+    func `an invalid token gets an HTTP answer, not a thrown error`() async throws {
         let response = try await Self.fetcher.fetchUsage(with: OAuthAccessToken("invalid-token"))
-        #expect(response.statusCode == 401)
-        #expect(throws: UsageError.tokenExpired) {
+        #expect([401, 429].contains(response.statusCode), "status \(response.statusCode)")
+        #expect(throws: UsageError.self) {
             try response.snapshot()
         }
     }
