@@ -1,5 +1,4 @@
 import ClaudeUsageBarCore
-import ClaudeUsageBarTestSupport
 import Foundation
 import Testing
 
@@ -70,18 +69,7 @@ struct LocalizationTests {
     /// arguments its English takes. Adding a key to Core means adding it here: the
     /// source-scan tests fail until this list names every key Core's sources declare.
     static func everyCase() -> [Case] {
-        let answered = FrontmostAppViewModel(
-            provider: FakeFrontmostAppProvider(answering: [FrontmostApp(name: "Finder")]),
-        )
-        answered.refresh()
-        let unanswered = FrontmostAppViewModel(provider: FakeFrontmostAppProvider(answering: [nil]))
-        return usageCases() + [
-            Case(resource: answered.label, arguments: ["Finder"]),
-            Case(resource: unanswered.label, arguments: []),
-            Case(resource: CounterViewModel.resetTitle, arguments: []),
-            Case(resource: CounterViewModel.decrementLabel, arguments: []),
-            Case(resource: CounterViewModel.incrementLabel, arguments: []),
-        ]
+        usageCases()
     }
 
     /// The usage menu's resources: one presentation with numbers, one without, and one
@@ -221,8 +209,8 @@ struct LocalizationTests {
     @Test
     func `the catalog and Core's bundle both declare English as the development language`() throws {
         #expect(try Self.catalog().sourceLanguage == "en")
-        guard case let .atURL(url) = CounterViewModel.resetTitle.bundle else {
-            Issue.record("resetTitle is not looked up in Core's bundle")
+        guard case let .atURL(url) = UsagePresentation.quitTitle.bundle else {
+            Issue.record("quitTitle is not looked up in Core's bundle")
             return
         }
         #expect(Bundle(url: url)?.developmentLocalization == "en")

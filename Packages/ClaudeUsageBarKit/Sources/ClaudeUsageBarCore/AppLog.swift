@@ -34,7 +34,4 @@ public enum AppLog {
     /// new concern adds a `Logger` here instead of building one inline. Nothing logged
     /// here ever carries the token or a response body.
     public static let usage = Logger(subsystem: subsystem, category: "usage")
-
-    /// The frontmost-application concern: ``FrontmostAppProviding`` and its view model.
-    public static let frontmostApp = Logger(subsystem: subsystem, category: "frontmost-app")
 }
