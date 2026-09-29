@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Renovate now opens a PR when gitleaks releases a new version (a regex manager on
+  `.github/workflows/gitleaks.yml`); the checksum stays a manual step, fail-closed because
+  the workflow now also runs on a pull request that edits it; documented in the workflow
+  and in `changing-gates`.
 - A `MyAppTestSupport` target in `Packages/MyAppKit/Package.swift` for test code both
   test targets share, and one contract suite per port in it:
   `FrontmostAppProvidingContract` checks that every non-`nil` answer of a
