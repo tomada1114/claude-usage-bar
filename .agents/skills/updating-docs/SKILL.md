@@ -92,8 +92,9 @@ README, CONTRIBUTING, or `AGENTS.md` edit.
 
 The one exception is the skill set changing shape: a skill added, renamed, or deleted
 has to be recorded in `AGENTS.md`'s Skills table, and widening a skill's subject means
-widening its row. Nothing checks the table against the directories under
-`.agents/skills/` yet, so a missed row goes unnoticed until someone reads it.
+widening its row. `scripts/checks/skills-index-complete.sh` (`just check-harness`)
+fails when the table's skill names and the directories under `.agents/skills/` differ,
+but not when a row's wording no longer matches what the skill covers.
 
 ## The checklist owns the mechanical items
 
@@ -114,8 +115,10 @@ from running the code, it does not need a sentence here.
 
 `.claude/rules/docs.md` asks that code examples be valid Swift or shell and that command
 examples match the `justfile`, but no gate in this repository compiles or runs a code
-block in a document, and none checks that a documented command still exists. Do not
-claim one — a document that promises a gate it does not have is worse than one that
+block in a document. The one command check is `scripts/checks/just-recipes-exist.sh`
+(`just check-harness`), which fails when `AGENTS.md` names a `just <recipe>` the
+`justfile` does not define; nothing checks any other command in any other document. Do
+not claim more — a document that promises a gate it does not have is worse than one that
 stays silent.
 
 That leaves a discipline instead. Keep a fenced example to something a reader can check

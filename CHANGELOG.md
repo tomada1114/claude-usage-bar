@@ -450,6 +450,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/tests/lib.sh` now unsets every exported `GIT_*` variable, not a fixed five,
   so `GIT_CONFIG_*`, `GIT_CEILING_DIRECTORIES` and the like no longer leak into fixture
   repositories; the new `scripts/tests/lib_test.sh` asserts none remain.
+- Stale claims about what the harness checks: `updating-docs` now names
+  `skills-index-complete.sh` and `just-recipes-exist.sh`, `authoring-skills` no longer
+  quotes outdated description and body sizes, `AGENTS.md` drops pointers to tracking
+  issues that do not exist and adds `just check-harness` to the `main.json` row, and
+  the `check-harness` comments in `justfile` and `ci.yml` point at `scripts/checks/`
+  instead of an enumeration that went stale.
+
 - Small factual drift in the docs: removed leftover references to a Python/uv sibling
   project (`README.md`, `.swiftlint.yml`, `mise.toml`, `.claude/rules/project.md`);
   `docs/adding-ios.md` now names `os` among `MyAppCore`'s imports; `docs/distribution.md`

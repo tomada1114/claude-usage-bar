@@ -107,7 +107,7 @@ job call.
 | Markdown | `just lint` (its `typos` spell-check) |
 | `mise.toml` | `mise install`, then `just check` |
 | `.github/labels.yml`, or an issue form under `.github/ISSUE_TEMPLATE/` | `just lint` (its `typos` spell-check), then `just check-harness` (every applied label declared, once); `scripts/tests/sync-labels_test.sh` for `scripts/sync-labels.sh` itself |
-| `.github/rulesets/main.json`, or `scripts/apply-ruleset.sh` | `scripts/tests/apply-ruleset_test.sh` |
+| `.github/rulesets/main.json`, or `scripts/apply-ruleset.sh` | `scripts/tests/apply-ruleset_test.sh`; `just check-harness` for `main.json` (`scripts/checks/ruleset-contexts.sh` reads it) |
 
 ## Architecture
 
@@ -191,7 +191,6 @@ the apps cut from it.
 ## Skills
 
 Each skill owns one kind of change. Load the one whose subject you are working on.
-The `translate-skills-*` issues add rows here as their skills land.
 
 Skills are authored under `.agents/skills/` — the path Codex CLI reads — and mirrored
 into `.claude/skills/`, the only path Claude Code reads. Claude Code is therefore the
@@ -409,9 +408,6 @@ reasons behind them, with worked examples, are in the `writing-repo-scripts` ski
 
 ## Enforcement layers
 
-Later issues update the Enforcement layers table and gap list as they close each gap
-named here — see the linked issue in each bullet.
-
 The rules in this file are enforced by these layers, from mechanical to procedural:
 
 | Layer | Fires on | Applies to | Holds |
@@ -427,7 +423,9 @@ The rules in this file are enforced by these layers, from mechanical to procedur
 | CI's `lint`, `test`, and `app` jobs (`.github/workflows/ci.yml`) | push to `main` and every pull request | everyone | the full gate: `scripts/lint.sh` (format, lint, shellcheck, actionlint, typos, the skills-mirror check), the script tests (`scripts/tests/run.sh`), the harness checks (`scripts/checks/run-all.sh`), tests with the coverage floor, build, UI test, and Release smoke |
 | This file | read at session start | every agent | everything else — the reasons behind the rules above |
 
-These gaps are deliberate and stay open until their tracking issue closes them:
+These gaps are deliberate. Closing one means adding a mechanism that enforces it —
+a hook, a harness check, or a CI job — and then updating its row in the table above and
+removing or narrowing its bullet here:
 
 - **`git commit --no-verify` bypasses the hook**, and nothing in this repository blocks
   it for every author. `.claude/settings.json`'s `deny` list refuses the usual spellings

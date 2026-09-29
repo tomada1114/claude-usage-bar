@@ -42,9 +42,8 @@ jobs:
         run: scripts/tests/run.sh
 
       - name: Harness checks (scripts/checks/run-all.sh)
-        # The same runner `just check-harness` calls: recipe names in AGENTS.md,
-        # workflow pins and permissions, skill frontmatter, the Skills index, and
-        # AGENTS.md's Product section.
+        # The same runner `just check-harness` calls: every check under
+        # scripts/checks/, each listed in AGENTS.md's Enforcement layers.
         run: scripts/checks/run-all.sh
 
   # Already the single spelling: this job calls scripts/coverage.sh (what `just test` runs),
