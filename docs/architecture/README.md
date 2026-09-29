@@ -58,5 +58,5 @@ nothing. `steering-the-roadmap` is the skill that changes it.
 | ADR | Decision | Status |
 |---|---|---|
 | [0001](adr/0001-app-shape.md) | A menu-bar agent with a native menu | Proposed |
-| [0002](adr/0002-sandbox-posture.md) | Run without the App Sandbox | Proposed |
+| [0002](adr/0002-sandbox-posture.md) | Run without the App Sandbox | Accepted |
 | [0003](adr/0003-usage-data-source.md) | Usage from Claude Code's keychain token and the OAuth usage endpoint | Proposed |

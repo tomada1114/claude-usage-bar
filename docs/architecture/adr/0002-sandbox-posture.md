@@ -1,6 +1,6 @@
 # ADR-0002: Run without the App Sandbox
 
-- **Status:** Proposed
+- **Status:** Accepted (by the owner, 2026-09-29)
 - **Date:** 2026-09-29
 - **Deciders:** the owner
 
@@ -19,9 +19,8 @@ that sandbox does not allow as shipped:
   `com.apple.security.network.client` entitlement for that, and the shipped file does not
   grant it.
 
-The owner has agreed to turning the sandbox off. The entitlements file is not changed by
-this ADR: editing it is reserved for a human (`AGENTS.md` › Security and human approval),
-so the change below waits for the owner.
+The owner chose to turn the sandbox off, and signed off on the entitlements change
+(`AGENTS.md` › Security and human approval).
 
 ## Decision drivers
 
@@ -46,28 +45,26 @@ so the change below waits for the owner.
 
 ## Decision
 
-Option 1, as the owner agreed: the App Sandbox off, so the process that spawns
+Option 1, as the owner chose: the App Sandbox off, so the process that spawns
 `/usr/bin/security` and reads Claude Code's keychain item runs with the same keychain and
 network access as the owner's own shell tools, which is the access this app is built on.
-The exact change is to replace the file's dictionary with an empty one:
+The change replaced the file's dictionary with an empty one:
 
 ```xml
 <dict>
 </dict>
 ```
 
-**Owner decision needed — option 2 was observed to work.** On 2026-09-29, a local Debug
+**Option 2 was observed to work, and was still not chosen.** On 2026-09-29, a local Debug
 build signed with option 2's entitlements (built with a `CODE_SIGN_ENTITLEMENTS` override
 pointing at a scratch file; the repository's file was not touched) read the token through
 `/usr/bin/security` and fetched the usage successfully, and the shipped entitlements
 (sandbox on, no network entitlement) read the token and failed only at the network. So on
-this Mac, the sandbox blocks the request, not the keychain read. Option 1 is still
-recorded as the decision because that is what the owner agreed to, and because the
-sandboxed keychain read is observed behavior only: no Apple documentation found for this
+this Mac, the sandbox blocks the request, not the keychain read. The owner chose
+option 1 with that result in hand, because the sandboxed keychain read is observed
+behavior only: no Apple documentation found for this
 ADR says a sandboxed app's child `security` process may read another application's
-keychain item, so a macOS update could withdraw it. If the owner prefers to keep the
-sandbox, option 2 replaces this decision, and its change is to add
-`com.apple.security.network.client` (`<true/>`) beside the existing sandbox key.
+keychain item, so a macOS update could withdraw it.
 
 Option 3 lost in either posture: the app is not on the item's access list, so the Security
 framework would prompt, and with an ad-hoc-signed Debug build the grant does not survive a
@@ -91,15 +88,8 @@ rebuild. Option 4 is not a working app.
 - Revisit if option 2 is confirmed reliable, or if the app is ever distributed beyond the
   owner's Mac.
 
-### Follow-ups
-
-- The owner applies the entitlements change above (or option 2's) and runs `just build`,
-  `just run`, and `just smoke`. Until then the running app shows `--` and "Couldn’t reach
-  the usage server".
-
 ## Open questions
 
-- Which posture the owner wants, given option 2's observed result.
 - Unverified: whether a sandboxed app's child `/usr/bin/security` process reading another
   application's keychain item is supported behavior or an accident of the legacy login
   keychain's access-list model. It decides whether option 2 is safe to rely on.
