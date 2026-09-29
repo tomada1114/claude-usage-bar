@@ -1,4 +1,4 @@
-import MyAppCore
+import ClaudeUsageBarCore
 import Testing
 
 @Suite("Counter")

@@ -1,16 +1,17 @@
-import MyAppCore
-import MyAppPlatform
-import MyAppUI
+import ClaudeUsageBarCore
+import ClaudeUsageBarPlatform
+import ClaudeUsageBarUI
 import SwiftUI
 
-/// Application entry point — wiring only. All real code lives in Packages/MyAppKit.
+/// Application entry point — wiring only. All real code lives in Packages/ClaudeUsageBarKit.
 ///
 /// This is also the composition root: the one place that knows both halves of a port.
-/// It constructs the `MyAppPlatform` adapter and hands it to a `MyAppCore` view model,
+/// It constructs the `ClaudeUsageBarPlatform` adapter and hands it to a `ClaudeUsageBarCore` view
+/// model,
 /// so nothing below `App/` — not the view model, not the view — depends on which
 /// implementation answers (`docs/architecture.md` › Layers).
 @main
-struct MyAppApp: App {
+struct ClaudeUsageBarApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(

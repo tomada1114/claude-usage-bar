@@ -1,6 +1,6 @@
+import ClaudeUsageBarCore
+import ClaudeUsageBarTestSupport
 import Foundation
-import MyAppCore
-import MyAppTestSupport
 import Testing
 
 @MainActor

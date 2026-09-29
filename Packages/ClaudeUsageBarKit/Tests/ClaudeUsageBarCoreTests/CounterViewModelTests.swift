@@ -1,5 +1,5 @@
+import ClaudeUsageBarCore
 import Foundation
-import MyAppCore
 import Testing
 
 @MainActor
