@@ -435,7 +435,9 @@ These gaps are deliberate and stay open until their tracking issue closes them:
   command inside `bash -c` is not matched. "Never bypass the hooks" therefore still holds
   as an instruction, and CI is the backstop — except for the staged guard, which no CI
   job reruns over a pull request's diff: GitHub push protection and secret scanning are
-  the server-side layer for secrets.
+  the server-side layer for secrets, and `.github/workflows/gitleaks.yml` scans the full
+  git history weekly with a pinned, checksum-verified gitleaks, so a secret that slipped
+  past both is found after the fact rather than never.
 - **Hooks are absent on a bare clone until `just install` runs**, because
   `core.hooksPath` is set by that recipe. `scripts/verify-hooks.sh` narrows this: it
   fails loudly at `just install` and `just check` time when git does not resolve the

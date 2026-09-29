@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A weekly `.github/workflows/gitleaks.yml` workflow that runs gitleaks 8.30.1 over
+  the full git history to find leaked secrets. The release binary is pinned and its
+  checksum verified, the job has `contents: read` only, and findings are redacted in
+  the log. `.gitleaksignore` lists the exact fingerprints of known fake fixtures.
 - Three harness checks, run by `just check-harness`, for lists that were kept in sync
   by hand: `scripts/checks/core-ban-lists-agree.sh` fails when `.swiftlint.yml`'s
   `no_ui_import_in_core` regex and `ArchitectureBoundaryTests.forbiddenModules` ban
