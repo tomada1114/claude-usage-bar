@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The `starting-an-app` skill now ends the app-shape and sandbox-posture steps by
+  writing ADR 0001 (app shape) and ADR 0002 (sandbox posture), as Proposed, in the
+  new app's `docs/architecture/` tree.
 - `scripts/checks/ruleset-contexts.sh`, run by `just check-harness`: fails when a
   required status-check context in `.github/rulesets/main.json` matches no job `name:`
   (or id, when a job has none) in a workflow triggered on `pull_request`, so renaming a
