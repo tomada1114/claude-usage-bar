@@ -75,12 +75,60 @@ struct LocalizationTests {
         )
         answered.refresh()
         let unanswered = FrontmostAppViewModel(provider: FakeFrontmostAppProvider(answering: [nil]))
-        return [
+        return usageCases() + [
             Case(resource: answered.label, arguments: ["Finder"]),
             Case(resource: unanswered.label, arguments: []),
             Case(resource: CounterViewModel.resetTitle, arguments: []),
             Case(resource: CounterViewModel.decrementLabel, arguments: []),
             Case(resource: CounterViewModel.incrementLabel, arguments: []),
+        ]
+    }
+
+    /// The usage menu's resources: one presentation with numbers, one without, and one
+    /// per failure, in a fixed locale and time zone so the arguments are known.
+    static func usageCases() -> [Case] {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? calendar.timeZone
+        let formatter = UsageFormatter(locale: Locale(identifier: "en_GB"), calendar: calendar)
+        // 2026-09-30T12:00Z (a Wednesday) and 2026-09-29T14:05Z.
+        let known = UsagePresentation(
+            state: UsageState(
+                snapshot: UsageSnapshot(
+                    fiveHour: UsageWindow(utilization: 19, resetsAt: nil),
+                    sevenDay: UsageWindow(
+                        utilization: 76,
+                        resetsAt: Date(timeIntervalSince1970: 1_790_769_600),
+                    ),
+                ),
+                failure: nil,
+                lastUpdated: Date(timeIntervalSince1970: 1_790_690_700),
+            ),
+            formatter: formatter,
+        )
+        let unknown = UsagePresentation(state: UsageState(), formatter: formatter)
+        let failures: [UsageError] = [
+            .notSignedIn,
+            .credentialsUnreadable(status: nil),
+            .tokenExpired,
+            .unreachable,
+            .unexpectedResponse(statusCode: nil),
+        ]
+        let failureCases = failures.compactMap { error in
+            UsagePresentation(state: UsageState(failure: error), formatter: formatter).failure
+                .map { Case(resource: $0, arguments: []) }
+        }
+        let optionalCases = [
+            known.weeklyReset.map { Case(resource: $0, arguments: ["Wed 12:00"]) },
+            known.updated.map { Case(resource: $0, arguments: ["14:05"]) },
+        ].compactMap(\.self)
+        return failureCases + optionalCases + [
+            Case(resource: known.badgeAccessibilityLabel, arguments: [76]),
+            Case(resource: unknown.badgeAccessibilityLabel, arguments: []),
+            Case(resource: known.weeklyUsage, arguments: ["76%"]),
+            Case(resource: unknown.weeklyUsage, arguments: []),
+            Case(resource: known.fiveHourUsage, arguments: ["19%"]),
+            Case(resource: unknown.fiveHourUsage, arguments: []),
+            Case(resource: UsagePresentation.quitTitle, arguments: []),
         ]
     }
 

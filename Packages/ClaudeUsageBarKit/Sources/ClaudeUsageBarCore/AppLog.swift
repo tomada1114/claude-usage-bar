@@ -14,7 +14,7 @@ import os
 /// the way users launch it has nowhere to send stdout, so those lines vanish exactly
 /// when they would matter. `.swiftlint.yml`'s `no_print_in_sources` rejects them.
 /// Anything user-derived that reaches a log message carries a privacy annotation —
-/// see ``FrontmostAppViewModel/refresh()`` for the worked example.
+/// see ``UsageMenuViewModel/refresh()`` for the worked example.
 public enum AppLog {
     /// The subsystem every logger below is created with: this app's bundle identifier,
     /// and the value `just logs` filters the stream on.
@@ -27,10 +27,14 @@ public enum AppLog {
     /// the two ever disagree.
     public static let subsystem = "io.github.tomada1114.ClaudeUsageBar"
 
-    /// The frontmost-application concern: ``FrontmostAppProviding`` and its view model.
+    /// The usage concern: reading the token, fetching the usage, and what came of it.
     ///
     /// One category per concern, named for the concern rather than for a type, so
-    /// `log stream --predicate 'category == "frontmost-app"'` narrows the stream to one
-    /// story. A new concern adds a `Logger` here instead of building one inline.
+    /// `log stream --predicate 'category == "usage"'` narrows the stream to one story. A
+    /// new concern adds a `Logger` here instead of building one inline. Nothing logged
+    /// here ever carries the token or a response body.
+    public static let usage = Logger(subsystem: subsystem, category: "usage")
+
+    /// The frontmost-application concern: ``FrontmostAppProviding`` and its view model.
     public static let frontmostApp = Logger(subsystem: subsystem, category: "frontmost-app")
 }
