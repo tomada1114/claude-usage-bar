@@ -35,5 +35,14 @@ public struct FrontmostApp: Equatable, Sendable {
 public protocol FrontmostAppProviding: Sendable {
     /// The application frontmost at the moment of the call, or `nil` when there is none
     /// or the OS declines to say (a sandboxed or background process may get no answer).
+    ///
+    /// A non-`nil` answer always names the application: its `name` is never empty. An
+    /// implementation that finds no usable name answers `nil` rather than inventing one,
+    /// so Core alone decides what "unavailable" reads like. Every call answers afresh
+    /// and keeps this promise, the first and every later one alike.
+    ///
+    /// `FrontmostAppProvidingContract` in `MyAppTestSupport` checks these clauses against
+    /// the fake (`just test`) and the real adapter (`just test-local`); a new clause is
+    /// stated here first, then added there.
     func currentFrontmostApp() -> FrontmostApp?
 }

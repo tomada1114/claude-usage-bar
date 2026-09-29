@@ -7,7 +7,7 @@
 #
 # Replaces (in all git-tracked text files):
 #   MyApp        -> NewName            (also MyAppKit/MyAppCore/MyAppUI/
-#                                      MyAppPlatform/MyAppApp)
+#                                      MyAppPlatform/MyAppTestSupport/MyAppApp)
 #   my-app       -> repo slug          (default: kebab-case of NewName)
 #   com.example  -> --bundle-id-prefix (kept if omitted)
 #   your-username / Your Name / you@example.com -> optional args (kept if omitted)

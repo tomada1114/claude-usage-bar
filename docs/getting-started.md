@@ -119,8 +119,13 @@ until your first real port exists if you want a pattern to copy):
 - [ ] The port: `Packages/MyAppKit/Sources/MyAppCore/FrontmostAppProviding.swift`
 - [ ] Its view model: `Packages/MyAppKit/Sources/MyAppCore/FrontmostAppViewModel.swift`
 - [ ] The adapter: `Packages/MyAppKit/Sources/MyAppPlatform/WorkspaceFrontmostAppProvider.swift`
-- [ ] The fake and the Core tests: `FakeFrontmostAppProvider` in
-      `Packages/MyAppKit/Tests/MyAppCoreTests/FrontmostAppViewModelTests.swift`
+- [ ] The Core tests: `Packages/MyAppKit/Tests/MyAppCoreTests/FrontmostAppViewModelTests.swift`,
+      `FrontmostAppProvidingContractTests.swift` beside it, and the `FakeFrontmostAppProvider`
+      cases in `everyCase()` in `LocalizationTests.swift`
+- [ ] The fake and the contract: `FakeFrontmostAppProvider.swift` and
+      `FrontmostAppProvidingContract.swift` in `Packages/MyAppKit/Tests/MyAppTestSupport`
+      (keep the target for your own port's fake and contract, or remove it from
+      `Package.swift` and both test targets' dependencies once nothing is left in it)
 - [ ] The local-machine test:
       `Packages/MyAppKit/Tests/MyAppPlatformTests/WorkspaceFrontmostAppProviderTests.swift`
       (if it was the last test there, keep the target with a test of your own
@@ -137,7 +142,8 @@ until your first real port exists if you want a pattern to copy):
 - [ ] The mentions that cite it as the worked example: `AGENTS.md` ›
       Architecture ("The worked example is `FrontmostAppProviding` /
       `WorkspaceFrontmostAppProvider`"), `docs/architecture.md` › Ports and
-      adapters and › Logging, and the skills `integrating-system-apis`,
+      adapters and › Logging, `.claude/rules/testing.md` › Fakes, not mocks and
+      › One Contract Suite per Port, and the skills `integrating-system-apis`,
       `running-the-app`, and `starting-an-app/references/app-shapes.md` — point
       them at your own port, or reword them (skills are edited under
       `.agents/skills/`, then `just agents-sync`)

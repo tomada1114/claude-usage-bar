@@ -129,7 +129,9 @@ public final class AccessibilityGateViewModel {
 That is the whole point of the port: `state`, `hasPrompted`, "prompt at most once", "what
 the blocked screen says" are all decisions, they are all in `MyAppCore`, and a Core test
 drives them with a fake whose `isTrusted` the test sets. `.claude/rules/testing.md` ›
-"Fakes, not mocks" has the fake's shape; `FakeFrontmostAppProvider` is the one to copy.
+"Fakes, not mocks" has the fake's shape; `FakeFrontmostAppProvider` in
+`Tests/MyAppTestSupport` is the one to copy, and "One Contract Suite per Port" holds it
+and the adapter to the same promises.
 
 Everything else about the blocked state is product design, not code: name the permission
 the way System Settings names it, and offer a button that opens the right pane rather

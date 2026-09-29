@@ -91,6 +91,7 @@ job call.
 | A view under `Packages/MyAppKit/Sources/MyAppUI/`, or anything under `App/` | `just build` |
 | An adapter under `Packages/MyAppKit/Sources/MyAppPlatform/` | `just test` (it compiles under `swift test`); then `just test-local` for its real-OS test, whose output goes in the PR; `just build` if `App/` wires it |
 | A test under `Packages/MyAppKit/Tests/MyAppPlatformTests/` | `just test-local` (`just test` and CI report these skipped — they are human-run) |
+| A fake or a port contract under `Packages/MyAppKit/Tests/MyAppTestSupport/` | `just test` (the contract against the fake); then `just test-local` (the contract against the real adapter) |
 | Formatting or style of any Swift file | `just lint` |
 | A SwiftLint or SwiftFormat violation that may be auto-fixable | `just fix` (formats, runs `swiftlint --fix`, then `just lint` reports what still needs a hand edit) |
 | One Core suite, while iterating | `just test-fast <filter>` (e.g. `just test-fast CounterTests`) — no coverage floor, so finish with `just test` |
@@ -127,6 +128,10 @@ Packages/MyAppKit/
 ├── Sources/MyAppPlatform/  # OS-integration adapters behind Core ports (AppKit and
 │                           #   friends) — translation only, no domain logic, and
 │                           #   deliberately outside the coverage floor
+├── Tests/MyAppTestSupport/ # Test code both test targets share: each port's fake and
+│                           #   its contract function — a library target no product
+│                           #   exports and no shipped module imports (enforced by
+│                           #   test), outside the coverage floor
 ├── Tests/MyAppCoreTests/   # Swift Testing suites — CI-run, coverage-gated
 └── Tests/MyAppPlatformTests/
                             # Adapter tests against the real OS — opt-in and human-run
@@ -150,6 +155,12 @@ Config/Debug.xcconfig       # Debug-only build settings project.yml cannot expre
   runs it against the real OS behind the `.requiresLocalMachine` opt-in, so a human runs
   it with `just test-local` and puts the output in the PR, while `just test` and CI
   report those tests as skipped (`.claude/rules/testing.md` › Where a Test Goes)
+- A fake keeps the port's promises only while something checks it against the adapter:
+  each port's fake and one contract function live in `Tests/MyAppTestSupport`, which
+  `MyAppCoreTests` runs against the fake (`just test`) and `MyAppPlatformTests` against
+  the real adapter (`just test-local`) (`.claude/rules/testing.md` › One Contract Suite
+  per Port). It is test code: no shipped module imports it, which
+  `ArchitectureBoundaryTests` enforces
 - `MyAppCore` never imports SwiftUI, AppKit, UIKit, Cocoa, ApplicationServices, Carbon,
   or ServiceManagement — in any spelling, including `@preconcurrency import AppKit` and
   `import struct SwiftUI.Color`. SwiftPM cannot block a

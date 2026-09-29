@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `MyAppTestSupport` target in `Packages/MyAppKit/Package.swift` for test code both
+  test targets share, and one contract suite per port in it:
+  `FrontmostAppProvidingContract` checks that every non-`nil` answer of a
+  `FrontmostAppProviding` names the application (a non-empty `name`) across repeated
+  calls. `MyAppCoreTests` runs it against `FakeFrontmostAppProvider` on every
+  `just test` and in CI, and `MyAppPlatformTests` runs it against
+  `WorkspaceFrontmostAppProvider` under `.requiresLocalMachine` (`just test-local`).
+  The target's sources live under `Tests/MyAppTestSupport`, outside the `MyAppCore`
+  coverage floors; no product exports it, and `ArchitectureBoundaryTests` fails if
+  `MyAppCore`, `MyAppUI`, or `MyAppPlatform` imports it.
+
 - `scripts/label-pr.sh`, tested by `scripts/tests/label-pr_test.sh`, now labels pull
   requests for `.github/workflows/pr-label.yml`, which runs it from a checkout of the
   base SHA. It maps every type the PR title check accepts, including `!` (`chore`,
@@ -388,6 +399,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `FakeFrontmostAppProvider` moved from `FrontmostAppViewModelTests.swift` to
+  `Tests/MyAppTestSupport/FakeFrontmostAppProvider.swift` as a `package` type, and is now
+  `Sendable` through an `OSAllocatedUnfairLock` around its call count instead of
+  `@unchecked Sendable`. `FrontmostAppProviding`'s doc comment now states the clause
+  the contract checks, and `WorkspaceFrontmostAppProvider` answers `nil` for an
+  application whose `localizedName` is empty, as it already did for a missing one.
 - `scripts/lint.sh`'s `shellcheck` and `typos` (`typos.toml`) no longer scan the
   generated `.claude/skills/` mirror, which doubled every finding in `.agents/skills/`;
   the mirror stays held byte-identical by `scripts/sync-agents.sh --check`

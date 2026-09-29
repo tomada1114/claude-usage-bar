@@ -34,9 +34,21 @@ let package = Package(
         // ArchitectureBoundaryTests, since SwiftPM cannot stop a system framework
         // import and this graph alone would not stop a later dependency edit).
         .target(name: "MyAppPlatform", dependencies: ["MyAppCore"], swiftSettings: strictSettings),
+        // Test code both test targets share: the fake of each Core port and the contract
+        // function every implementation of that port must pass. It is a library target
+        // only because a test target cannot be depended on, and it is test code all the
+        // same: no product exports it, so `App/` cannot link it, ArchitectureBoundaryTests
+        // fails if a shipped module imports it, and its sources sit under Tests/ — outside
+        // scripts/coverage.sh's Sources/MyAppCore filter, so it is never counted as Core.
+        .target(
+            name: "MyAppTestSupport",
+            dependencies: ["MyAppCore"],
+            path: "Tests/MyAppTestSupport",
+            swiftSettings: strictSettings,
+        ),
         .testTarget(
             name: "MyAppCoreTests",
-            dependencies: ["MyAppCore"],
+            dependencies: ["MyAppCore", "MyAppTestSupport"],
             swiftSettings: strictSettings,
         ),
         // Local-machine tests for the adapters: they talk to the real OS, which a CI
@@ -48,7 +60,7 @@ let package = Package(
         // measures Sources/MyAppCore and nothing else.
         .testTarget(
             name: "MyAppPlatformTests",
-            dependencies: ["MyAppPlatform", "MyAppCore"],
+            dependencies: ["MyAppPlatform", "MyAppCore", "MyAppTestSupport"],
             swiftSettings: strictSettings,
         ),
     ],

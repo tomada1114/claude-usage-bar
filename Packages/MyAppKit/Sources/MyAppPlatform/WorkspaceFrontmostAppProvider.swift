@@ -24,11 +24,13 @@ public struct WorkspaceFrontmostAppProvider: FrontmostAppProviding {
     /// of behavior here.
     ///
     /// `NSWorkspace` answers `nil` when no application is frontmost; a running
-    /// application with no `localizedName` is dropped rather than given a made-up one,
-    /// so Core decides what "unavailable" reads like.
+    /// application with no `localizedName`, or an empty one, is dropped rather than given
+    /// a made-up one, as the port's contract requires — Core decides what "unavailable"
+    /// reads like.
     public func currentFrontmostApp() -> FrontmostApp? {
         guard let application = NSWorkspace.shared.frontmostApplication,
-              let name = application.localizedName
+              let name = application.localizedName,
+              !name.isEmpty
         else {
             return nil
         }

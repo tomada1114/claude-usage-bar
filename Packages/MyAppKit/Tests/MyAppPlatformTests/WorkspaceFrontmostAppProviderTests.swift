@@ -1,6 +1,7 @@
 import AppKit
 import MyAppCore
 import MyAppPlatform
+import MyAppTestSupport
 import Testing
 
 /// The worked example of a local-machine adapter test, and the shape every other one
@@ -11,6 +12,10 @@ import Testing
 /// that translation — what the app shows when there is no frontmost application, when
 /// it refreshes — stays a Core test against `FakeFrontmostAppProvider`, where the
 /// coverage floor sees it (`.claude/rules/testing.md` › Where a test goes).
+///
+/// Beside the translation test sits the adapter half of the port's contract suite:
+/// `FrontmostAppProvidingContract`, the same function `MyAppCoreTests` runs against the
+/// fake on every `just test` (`.claude/rules/testing.md` › One Contract Suite per Port).
 ///
 /// `WorkspaceFrontmostAppProvider` needs no TCC grant; it needs a logged-in GUI
 /// session, which is exactly what a CI runner does not have.
@@ -44,5 +49,10 @@ struct WorkspaceFrontmostAppProviderTests {
             },
             "\(frontmost) matches none of the \(running.count) running applications",
         )
+    }
+
+    @Test
+    func `keeps the FrontmostAppProviding contract the fake is held to`() {
+        FrontmostAppProvidingContract.check(WorkspaceFrontmostAppProvider())
     }
 }

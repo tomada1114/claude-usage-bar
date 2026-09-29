@@ -24,15 +24,16 @@ coverage floor that pushes work into Core (`changing-gates`).
 
 ## The shape, before any OS code
 
-Every integration is the same four pieces, and the template already ships one of each to
+Every integration is the same five pieces, and the template already ships one of each to
 copy — `docs/architecture.md` › "Ports and adapters" is the full description:
 
 | Piece | Where | Worked example |
 |---|---|---|
 | Port: a `Sendable` protocol, value types in and out | `Packages/MyAppKit/Sources/MyAppCore/` | `FrontmostAppProviding.swift` |
 | Adapter: the OS framework import, translation only | `Packages/MyAppKit/Sources/MyAppPlatform/` | `WorkspaceFrontmostAppProvider.swift` |
-| Fake: a real implementation answering from test data | `Tests/MyAppCoreTests/` | `FakeFrontmostAppProvider` in `FrontmostAppViewModelTests.swift` |
+| Fake: a real implementation answering from test data | `Tests/MyAppTestSupport/` | `FakeFrontmostAppProvider.swift` |
 | Local-machine test: the adapter against the real OS | `Tests/MyAppPlatformTests/` | `WorkspaceFrontmostAppProviderTests.swift` |
+| Contract: the port's promises, run against the fake and the adapter | `Tests/MyAppTestSupport/` | `FrontmostAppProvidingContract.swift` |
 
 Write the port first. Its signature is where you decide what the OS type collapses into,
 and an adapter written before its port almost always leaks one: `CGEvent`, `AXUIElement`,
@@ -132,4 +133,7 @@ document.
 - [ ] The adapter has a `.requiresLocalMachine` test in `Tests/MyAppPlatformTests`, and
       the pull request carries its `just test-local` output. No gate produces it
       (`AGENTS.md` › "Enforcement layers").
+- [ ] The port's fake and its contract function live in `Tests/MyAppTestSupport`, and
+      the contract runs against both the fake (`MyAppCoreTests`) and the adapter
+      (`MyAppPlatformTests`).
 - [ ] No new `@unchecked Sendable`, `nonisolated(unsafe)`, or `try!`.

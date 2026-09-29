@@ -1,5 +1,6 @@
 import Foundation
 import MyAppCore
+import MyAppTestSupport
 import Testing
 
 /// The subset of the String Catalog format these tests read: its source language and,

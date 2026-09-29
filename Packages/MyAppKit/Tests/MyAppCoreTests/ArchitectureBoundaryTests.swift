@@ -11,6 +11,10 @@ import Testing
 /// `MyAppUI` and `MyAppPlatform` are siblings over Core and never import each other.
 /// SwiftPM's target graph already withholds the modules, but only until someone adds a
 /// dependency edge; this suite is what makes that edit fail a check rather than compile.
+///
+/// `MyAppTestSupport` is test code (the fakes and the port contracts), so no shipped
+/// module imports it. It is no product, so `App/` cannot link it; inside the package the
+/// target graph alone would allow a dependency edit, and this suite is what refuses it.
 @Suite("Architecture boundary")
 struct ArchitectureBoundaryTests {
     /// Frameworks `MyAppCore` must not import. `Cocoa` re-exports AppKit; the three
@@ -114,6 +118,11 @@ struct ArchitectureBoundaryTests {
     @Test
     func `no MyAppPlatform source file imports MyAppUI`() throws {
         try Self.expectNoImports(of: ["MyAppUI"], in: "MyAppPlatform")
+    }
+
+    @Test(arguments: ["MyAppCore", "MyAppUI", "MyAppPlatform"])
+    func `no shipped source file imports MyAppTestSupport`(module: String) throws {
+        try Self.expectNoImports(of: ["MyAppTestSupport"], in: module)
     }
 
     // MARK: - The pattern itself
