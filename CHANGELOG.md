@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `merging-dependency-prs` skill for landing Dependabot (SwiftPM, GitHub Actions) and
+  Renovate (`mise.toml`) PRs: a security checklist, one human approval per invocation
+  for a listed batch of passing PRs, a combined branch for conflicting bumps, and
+  failure modes. It points to `.claude/rules/project.md` › Toolchain Pinning for the
+  bump policy rather than restating it.
 - Private-repository setup steps in `README.md` "Using This Template" and the
   `starting-an-app` skill (`references/private-repository.md`): which workflows to
   delete (Scorecard, CodeQL, Dependency Review), the `release.yml` attestation step to
