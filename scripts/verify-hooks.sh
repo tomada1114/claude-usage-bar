@@ -69,8 +69,10 @@ fail() { # fail <code> <what failed> <expected> <actual> <next>
 # ("true"/"false") decides first, whatever the exit code or any warning on
 # stderr, so a git that answers is read by its answer. Only when it gives none
 # is stderr read, with LC_ALL=C so the match does not depend on the locale.
+# LC_ALL=C goes through env, not a bare prefix: Homebrew bash re-inits its locale
+# for a prefixed command in the forked child, which can SIGSEGV on macOS (exit 139).
 INSIDE_EXIT=0
-INSIDE_OUT=$(LC_ALL=C git rev-parse --is-inside-work-tree 2>/dev/null) || INSIDE_EXIT=$?
+INSIDE_OUT=$(env LC_ALL=C git rev-parse --is-inside-work-tree 2>/dev/null) || INSIDE_EXIT=$?
 case "${INSIDE_OUT}" in
     true) ;;
     false)
@@ -78,7 +80,7 @@ case "${INSIDE_OUT}" in
         exit 0
         ;;
     *)
-        INSIDE_ERR=$(LC_ALL=C git rev-parse --is-inside-work-tree 2>&1 >/dev/null || true)
+        INSIDE_ERR=$(env LC_ALL=C git rev-parse --is-inside-work-tree 2>&1 >/dev/null || true)
         case "${INSIDE_ERR}" in
             *"not a git repository"*)
                 echo "verify-hooks: not inside a git work tree; not checking the pre-commit hook."

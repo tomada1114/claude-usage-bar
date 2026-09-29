@@ -166,6 +166,23 @@ case_outside_work_tree_skips_under_other_locale() {
     assert_stdout_contains "not inside a git work tree"
 }
 
+# Both locale-pinned git calls go through env (issue #195): a bare `LC_ALL=C git`
+# prefix inside $(…) makes Homebrew bash re-init its locale in the forked child,
+# which intermittently SIGSEGVs (exit 139) on macOS. The outside-a-work-tree path
+# makes both calls, so a pass-through env stub sees both or the prefix is back.
+case_locale_pin_goes_through_env() {
+    local dir real_env
+    dir=$(make_temp_dir)
+    real_env=$(command -v env)
+    cd "${dir}"
+    stub_command env "exec '${real_env}' \"\$@\""
+    capture "${real_env}" GIT_CEILING_DIRECTORIES="${dir}" "${BASH}" "${VERIFY_SRC}"
+    assert_exit 0
+    assert_stdout_contains "not inside a git work tree"
+    [ "$(grep -cxF 'LC_ALL=C git rev-parse --is-inside-work-tree' "${STUB_BIN}/env.log")" = 2 ] ||
+        _fail "expected both git rev-parse calls to run as \`env LC_ALL=C git …\`"
+}
+
 # A linked worktree of an installed repo also passes: .githooks is tracked, so
 # it is checked out into the worktree too, and the hooks directory the shared
 # common config resolves to must still match this worktree's .githooks.
@@ -192,5 +209,6 @@ run_case "a malformed .git/config fails ERR_HOOKS_GIT_FAILED" case_broken_git_co
 run_case "any other git failure fails ERR_HOOKS_GIT_FAILED" case_git_other_failure_fails
 run_case "a git warning on stderr does not override its answer" case_git_warning_on_stderr_still_passes
 run_case "outside a git work tree skips under a non-C locale" case_outside_work_tree_skips_under_other_locale
+run_case "the LC_ALL=C git calls go through env, not a bare prefix" case_locale_pin_goes_through_env
 run_case "a linked worktree of an installed repo exits 0" case_linked_worktree_passes
 finish
