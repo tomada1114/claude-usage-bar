@@ -15,6 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `deps`, and the rest were unlabeled before), removes a type label a retitle left
   stale, and never creates a label: the old colorless `gh label create` fallback is
   gone, and a label missing from `.github/labels.yml` fails the job instead.
+- String Catalog localization plumbing: `Packages/MyAppKit/Package.swift` sets
+  `defaultLocalization: "en"`, and `MyAppCore` ships
+  `Sources/MyAppCore/Resources/Localizable.xcstrings` (English only). Core view models
+  now own the wording and return `LocalizedStringResource`:
+  `FrontmostAppViewModel.label` replaces `displayName` and `unavailableDisplayName`,
+  and `CounterViewModel.resetTitle`, `decrementLabel`, and `incrementLabel` replace the
+  view's "Reset" title and its "Decrement" and "Increment" accessibility labels. `LocalizationTests`
+  scans `Sources/MyAppCore` for `LocalizedStringResource(…)` calls and fails when one
+  lacks an explicit key, a `defaultValue`, or `bundle: .module`, when a declared key is
+  missing from the catalog or a catalog key is declared nowhere, or when the catalog's
+  English differs from the code's. A `localizing-the-app` skill holds the
+  rules, `AGENTS.md`'s English-only rule gains one exception (translated values in a
+  `*.xcstrings` catalog), and a shipped language beyond English is now an ADR trigger.
 - A weekly `.github/workflows/gitleaks.yml` workflow that runs gitleaks 8.30.1 over
   the full git history to find leaked secrets. The release binary is pinned and its
   checksum verified, the job has `contents: read` only, and findings are redacted in

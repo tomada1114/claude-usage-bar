@@ -69,7 +69,7 @@ and `FrontmostAppViewModel` is the worked example; copy its shape.
 | `if let` on an optional model or value, to show or omit a part | Any rule, clamp, threshold, or comparison on domain values |
 | Calling an action from a `Button`, `.onSubmit`, a menu command | What the action does, and the state it leaves behind |
 | *When* to ask again — `.onChange(of: scenePhase)`, `.task` — as `ContentView` refreshes `frontmostApp` on activation | *What* asking again means (`refresh()`) |
-| Static labels ("Reset") | Wording that depends on state (`displayName`, `unavailableDisplayName`) |
+| `Text(verbatim:)` for a glyph or an already-formatted number | Every word a person reads, as a `LocalizedStringResource` (`resetTitle`, `label`) — `localizing-the-app` |
 | `.disabled(!model.canDecrement)` | Formatting numbers and dates with an injected `Locale` |
 
 - An action that waits is `async`; call it from `.task { await model.load() }` so
@@ -107,9 +107,10 @@ and `FrontmostAppViewModel` is the worked example; copy its shape.
   the test in the same change (`LaunchTests` reads `counterValue` and clicks
   `incrementButton`).
 - **Labels are what VoiceOver says**, and an identifier is not one. Give every control a
-  text label: `Button("Add", systemImage: "plus")` or `Label` rather than a bare `Image`,
-  and `.accessibilityLabel(...)` where the visible text is a glyph or a number without
-  context. A decorative image is `Image(decorative:)` or `.accessibilityHidden(true)`.
+  text label from a Core `LocalizedStringResource` (`localizing-the-app`):
+  `Button(model.addTitle, systemImage: "plus")` or `Label` rather than a bare `Image`,
+  and `.accessibilityLabel(model.decrementLabel)` where the visible text is a glyph or a
+  number without context. A decorative image is `Image(decorative:)` or `.accessibilityHidden(true)`.
   Enforced by: `accessibility_label_for_image` (a labelless image) and
   `accessibility_trait_for_button` (an `.onTapGesture` without `.isButton`), both on
   through `opt_in_rules: all`. Neither sees a glyph-only text button — review does.

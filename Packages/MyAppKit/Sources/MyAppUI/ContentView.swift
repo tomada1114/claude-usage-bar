@@ -13,7 +13,10 @@ private enum Layout {
 /// The app's single screen: a bounded counter with increment/decrement/reset.
 ///
 /// Deliberately thin — every behavior it renders is owned and unit-tested by
-/// `CounterViewModel` in MyAppCore.
+/// `CounterViewModel` in MyAppCore, and so is every word: the view has no localizable
+/// literal of its own. A `Text("…")` literal here would be looked up in the app's main
+/// bundle, not the package's catalog; the value and the "−" and "+" glyphs are
+/// verbatim instead.
 public struct ContentView: View {
     @State private var model: CounterViewModel
     /// Present only when the app shell handed one down — the view has no way to build a
@@ -25,24 +28,24 @@ public struct ContentView: View {
 
     public var body: some View {
         VStack(spacing: Layout.stackSpacing) {
-            Text("\(model.value)")
+            Text(verbatim: String(model.value))
                 .font(.system(size: Layout.valueFontSize, weight: .bold, design: .rounded))
                 .accessibilityIdentifier("counterValue")
             HStack {
-                Button("−") { model.decrement() }
+                Button { model.decrement() } label: { Text(verbatim: "−") }
                     .disabled(!model.canDecrement)
                     // The glyph is not a name: VoiceOver reads the label instead.
-                    .accessibilityLabel("Decrement")
+                    .accessibilityLabel(CounterViewModel.decrementLabel)
                     .accessibilityIdentifier("decrementButton")
-                Button("Reset") { model.reset() }
+                Button(CounterViewModel.resetTitle) { model.reset() }
                     .accessibilityIdentifier("resetButton")
-                Button("+") { model.increment() }
+                Button { model.increment() } label: { Text(verbatim: "+") }
                     .disabled(!model.canIncrement)
-                    .accessibilityLabel("Increment")
+                    .accessibilityLabel(CounterViewModel.incrementLabel)
                     .accessibilityIdentifier("incrementButton")
             }
             if let frontmostApp {
-                Text("Frontmost: \(frontmostApp.displayName)")
+                Text(frontmostApp.label)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("frontmostAppLabel")
@@ -85,6 +88,8 @@ public struct ContentView: View {
     if let counter = try? Counter(value: 100) {
         ContentView(model: CounterViewModel(counter: counter))
     } else {
-        Text("Counter(value: 100) is out of bounds — check Counter's invariants")
+        // A developer's note in a preview, never shown in the app: verbatim, so it stays
+        // out of the String Catalog a translator works from.
+        Text(verbatim: "Counter(value: 100) is out of bounds — check Counter's invariants")
     }
 }

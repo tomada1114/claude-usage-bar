@@ -94,6 +94,7 @@ job call.
 | Formatting or style of any Swift file | `just lint` |
 | A SwiftLint or SwiftFormat violation that may be auto-fixable | `just fix` (formats, runs `swiftlint --fix`, then `just lint` reports what still needs a hand edit) |
 | One Core suite, while iterating | `just test-fast <filter>` (e.g. `just test-fast CounterTests`) — no coverage floor, so finish with `just test` |
+| `Packages/MyAppKit/Sources/MyAppCore/Resources/Localizable.xcstrings`, or a `LocalizedStringResource` in Core | `just test` (`LocalizationTests` scans Core's `LocalizedStringResource(…)` calls and holds their keys and English to the catalog); `just build` to compile the catalog into the app |
 | `project.yml`, or `Config/Debug.xcconfig` | `just generate && just build` |
 | A test under `LaunchUITests/`, or launch behavior | `just uitest` |
 | The Release configuration, or anything only a Release launch shows | `just smoke` |
@@ -181,7 +182,8 @@ these owes an ADR, as `recording-architecture-decisions` sets out:
 - distribution — the Mac App Store, Developer ID with notarization, an in-app updater;
 - `deploymentTarget` in `project.yml`, with `platforms:` in `Package.swift`;
 - a TCC permission — Accessibility, Input Monitoring, Screen Recording, or any other
-  privacy grant.
+  privacy grant;
+- a shipped language beyond English, the `defaultLocalization` the template sets.
 
 An agent writes an ADR as Proposed; only a human accepts it. An ADR records reasoning and
 grants nothing: an entitlement, a signing change, or a new dependency still needs the
@@ -227,6 +229,7 @@ tool that sees the generated copy rather than the authored one:
 | `starting-an-app` | turning this template into a new app: `scripts/bootstrap.sh`'s rename, what the new repository keeps, its `just labels` and `just ruleset` setup, choosing the app shape (windowed or menu-bar agent), and deciding the sandbox posture |
 | `shipping-issues` | shipping the open issue backlog: ranking issues by `priority: P0`-`P3`, implementing the top one, reviewing it with `/code-review`, and taking its PR through CI to merge |
 | `steering-the-roadmap` | the app's direction in `docs/architecture/roadmap.md`: its Now / Next / Later horizons, who changes it and when, how the backlog and parked `on hold` issues feed it, and answering "what is next?" before `shipping-issues` |
+| `localizing-the-app` | a string a person reads: the String Catalog `Localizable.xcstrings` in `MyAppCore`, `defaultLocalization`, Core view models returning `LocalizedStringResource` (`bundle: .module`), `Text(verbatim:)` in `MyAppUI`, keeping the catalog and `LocalizationTests` in step, `xcodebuild -exportLocalizations`, plurals, and what adding a language involves |
 | `merging-dependency-prs` | landing open Dependabot (SwiftPM, GitHub Actions) and Renovate (`mise.toml`) PRs: the security checklist, one human approval for a listed batch of passing PRs, and a combined branch for conflicting bumps |
 
 ### Rules
@@ -486,7 +489,9 @@ Before submitting a PR:
 
 ## Important Reminders
 
-- All code, docs, commits, and PRs must be written in English
+- All code, docs, commits, and PRs must be written in English. The one exception is a
+  translated value in a `*.xcstrings` String Catalog — the entry for a language other
+  than `en`; its key, its `comment`, and its English stay English (`localizing-the-app`)
 - Do what has been asked; nothing more, nothing less
 - NEVER create files unless absolutely necessary
 - ALWAYS prefer editing an existing file to creating a new one

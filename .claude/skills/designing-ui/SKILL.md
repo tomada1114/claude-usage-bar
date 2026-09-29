@@ -18,8 +18,8 @@ the craft rules below, and the app's design lock: the short set of visual decisi
 every screen obeys, and where they are recorded. **Does not own:** how a view is written
 in SwiftUI, its previews, and its accessibility wiring (`building-swiftui-screens`); the
 app shape, windowed or menu-bar agent (`starting-an-app`); an ADR's shape, numbering,
-and statuses (`recording-architecture-decisions`); user-visible wording that depends on
-state, which lives in a Core view model (`designing-core-logic`).
+and statuses (`recording-architecture-decisions`); where user-visible wording lives —
+a Core view model and its String Catalog (`localizing-the-app`).
 
 Apple's Human Interface Guidelines (HIG) are the baseline and are not restated here: this
 skill keeps only what this repository decides on top of them, and links the HIG page for

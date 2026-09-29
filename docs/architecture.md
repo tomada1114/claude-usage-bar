@@ -117,6 +117,7 @@ example: it logs that a refresh happened `.public` and the other application's n
 | You are adding… | It goes in… | Tested by… |
 |---|---|---|
 | Domain logic, state, view models | `Packages/MyAppKit/Sources/MyAppCore` | Swift Testing in `Tests/MyAppCoreTests` (coverage-gated) |
+| Words a person reads | A Core view model returning `LocalizedStringResource`, with its key in `Packages/MyAppKit/Sources/MyAppCore/Resources/Localizable.xcstrings` (`localizing-the-app`) | The view model's tests + `LocalizationTests` in `Tests/MyAppCoreTests` |
 | Views, view modifiers | `Packages/MyAppKit/Sources/MyAppUI` | Core view-model tests + the launch UI test |
 | OS integration: AppKit, accessibility, hotkeys, login items, the file system beyond Foundation | `Packages/MyAppKit/Sources/MyAppPlatform`, as an adapter behind a Core port | Core tests through a fake of the port (coverage-gated), plus an opt-in local-machine test of the adapter in `Tests/MyAppPlatformTests` — `just test-local` |
 | App lifecycle, scenes, menus, wiring an adapter to a view model | `App/` | `LaunchUITests` + `just smoke` |

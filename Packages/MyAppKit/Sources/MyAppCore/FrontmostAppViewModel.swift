@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 /// Observable presentation state over a ``FrontmostAppProviding`` port.
@@ -9,18 +10,31 @@ import Observation
 @MainActor
 @Observable
 public final class FrontmostAppViewModel {
-    /// Shown when the port has no answer, before the first ``refresh()`` or after one
-    /// that came back empty.
-    public static let unavailableDisplayName = "—"
-
     /// The last answer the port gave, or `nil` before the first ``refresh()``.
     public private(set) var frontmostApp: FrontmostApp?
 
     private let provider: any FrontmostAppProviding
 
-    /// What to render for the current answer.
-    public var displayName: String {
-        frontmostApp?.name ?? Self.unavailableDisplayName
+    /// The whole line a view renders for the current answer, from Core's String Catalog.
+    ///
+    /// A complete sentence per state rather than a fixed prefix around a swapped-in
+    /// fragment: a translation can then reorder or reword the line around the name. The
+    /// unavailable state covers both "not asked yet" and "the port answered `nil`".
+    public var label: LocalizedStringResource {
+        guard let name = frontmostApp?.name else {
+            return LocalizedStringResource(
+                "frontmostApp.unavailable",
+                defaultValue: "Frontmost: —",
+                bundle: .module,
+                comment: "Footnote shown when no application is frontmost, or before the app has asked.",
+            )
+        }
+        return LocalizedStringResource(
+            "frontmostApp.label",
+            defaultValue: "Frontmost: \(name)",
+            bundle: .module,
+            comment: "Footnote naming the application that is frontmost. The argument is that application's name.",
+        )
     }
 
     /// Creates the view model over `provider`. Asking the OS in an initializer would

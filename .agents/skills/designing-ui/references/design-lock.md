@@ -25,7 +25,7 @@ it under Open questions until it is decided.
 | Materials | Where a material or vibrancy is used (a sidebar, a popover) and where it is not | `.background(.regularMaterial)` and friends, at the named places only |
 | Window sizing | The main window's minimum size, and default size if not the minimum; a panel's fixed size for a menu-bar agent | The root view's `.frame(minWidth:minHeight:)`; `.defaultSize(...)` on the scene in `App/` |
 | Motion | "System transitions only", or which custom animations exist and what each communicates; behavior under Reduce Motion | `withAnimation` / `.animation` at the call site, gated on `accessibilityReduceMotion` |
-| Copy style | Title case or sentence case per element type (buttons, menu items, window titles, labels, alerts); the app's voice in one sentence | String literals in views; state-dependent wording in Core view models |
+| Copy style | Title case or sentence case per element type (buttons, menu items, window titles, labels, alerts); the app's voice in one sentence | The English values in `Localizable.xcstrings`, returned by Core view models (`localizing-the-app`) |
 | App icon | Who supplies it and in which format, or "placeholder until distribution" | `App/Assets.xcassets/AppIcon.appiconset` |
 
 ## Sharing values between views

@@ -80,8 +80,9 @@ only when the answer really comes from an OS framework Core may not import.
   case-insensitive sort, a plural — takes a `Locale` (default `.current` at the
   composition root or the initializer's default argument), and passes it on explicitly:
   `value.formatted(.number.locale(locale))`, `date.formatted(.dateTime.locale(locale))`.
-- Keep the user-visible *wording* in Core where the coverage floor sees it, as
-  `FrontmostAppViewModel.unavailableDisplayName` is; the view only renders it.
+- Keep the user-visible *wording* in Core where the coverage floor sees it, as a
+  `LocalizedStringResource` like `FrontmostAppViewModel.label`; the view only renders it.
+  How one is declared and kept in the String Catalog is `localizing-the-app`.
 - **Tests:** `Locale(identifier: "en_US_POSIX")` for a stable expected string, plus a
   second locale (`"de_DE"`, `"ja_JP"`) when the behavior under test *is* the
   localization.
@@ -118,10 +119,10 @@ only when the answer really comes from an OS framework Core may not import.
 ## Action-shaped view models
 
 - A view model is `@MainActor @Observable public final class`, importing `Observation`
-  only (`CounterViewModel`, `FrontmostAppViewModel`). It is the one place a view reads
-  state from and sends intent to.
+  and, for its wording, `Foundation` (`CounterViewModel`, `FrontmostAppViewModel`). It
+  is the one place a view reads state from and sends intent to.
 - State is `public private(set) var`; derived state is a computed property
-  (`canIncrement`, `displayName`). A view never mutates state directly.
+  (`canIncrement`, `label`). A view never mutates state directly.
 - Entry points are **actions named for what the user did or the app saw**:
   `increment()`, `reset()`, `refresh()`, `textChanged()` — not setters, and not a
   generic `send(_ action:)` reducer. Each action is a method a test can call and then

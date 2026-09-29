@@ -5,7 +5,8 @@ description: >
   and the numbered adr/NNNN-*.md records. Use when a change adds a target or a Core
   port, changes the app shape (LSUIElement, MenuBarExtra), the App Sandbox or an
   entitlement, persistence, a package dependency, distribution (Mac App Store,
-  Developer ID, Sparkle), deploymentTarget or platforms:, or a TCC permission; when
+  Developer ID, Sparkle), deploymentTarget or platforms:, a TCC permission, or a
+  shipped language beyond English (defaultLocalization); when
   proposing, accepting, amending, rejecting, or superseding an ADR; when writing a
   version, an availability, a price, or an Apple policy into a document; or when
   deciding whether a change owes an ADR at all.
@@ -70,6 +71,9 @@ triggers; each is here with why it is expensive:
 - **A TCC permission** — Accessibility, Input Monitoring, Screen Recording, or any other
   privacy grant. Each one is a prompt the user must accept, a way the app can
   half-work, and often a reason the sandbox has to go.
+- **A shipped language beyond English** — the template sets `defaultLocalization: "en"`
+  and ships one. A second language makes every later string owe a translation and a
+  reviewer, and is hard to withdraw once users run the app in it (`localizing-the-app`).
 
 A refactor inside a module, a test, a view within the existing layers, a rename that
 crosses no boundary, or a fix that restores what an ADR already says owes none. Saying

@@ -1,12 +1,15 @@
+import Foundation
 import MyAppCore
 import Testing
 
 /// A fake, not a mock (`.claude/rules/testing.md` › Fakes, not mocks): it is a real
 /// conforming implementation whose answers are data, and whose calls are recorded in a
-/// value the test reads afterwards. No expectations are declared up front.
-private final class FakeFrontmostAppProvider: FrontmostAppProviding, @unchecked Sendable {
-    /// Safe without a lock: every test below drives it from the `@MainActor` suite, so
-    /// the mutations and the reads happen on one actor. `@unchecked` is what lets a
+/// value the test reads afterwards. No expectations are declared up front. Internal
+/// rather than private so `LocalizationTests` drives the view model with this same fake.
+final class FakeFrontmostAppProvider: FrontmostAppProviding, @unchecked Sendable {
+    /// Safe without a lock: every test that uses it — this file's and
+    /// `LocalizationTests`' — runs in a `@MainActor` suite, so the mutations and the
+    /// reads happen on one actor. `@unchecked` is what lets a
     /// recording fake satisfy a `Sendable` port without a lock it does not need.
     private(set) var callCount = 0
     private let answers: [FrontmostApp?]
@@ -30,7 +33,7 @@ struct FrontmostAppViewModelTests {
         let provider = FakeFrontmostAppProvider(answering: [FrontmostApp(name: "Finder")])
         let model = FrontmostAppViewModel(provider: provider)
         #expect(model.frontmostApp == nil)
-        #expect(model.displayName == FrontmostAppViewModel.unavailableDisplayName)
+        #expect(model.label.resolved(in: .english) == "Frontmost: —")
         #expect(provider.callCount == 0)
     }
 
@@ -40,7 +43,7 @@ struct FrontmostAppViewModelTests {
         let model = FrontmostAppViewModel(provider: FakeFrontmostAppProvider(answering: [app]))
         model.refresh()
         #expect(model.frontmostApp == app)
-        #expect(model.displayName == "Finder")
+        #expect(model.label.resolved(in: .english) == "Frontmost: Finder")
     }
 
     @Test
@@ -48,7 +51,7 @@ struct FrontmostAppViewModelTests {
         let model = FrontmostAppViewModel(provider: FakeFrontmostAppProvider(answering: [nil]))
         model.refresh()
         #expect(model.frontmostApp == nil)
-        #expect(model.displayName == FrontmostAppViewModel.unavailableDisplayName)
+        #expect(model.label.resolved(in: .english) == "Frontmost: —")
     }
 
     @Test
@@ -60,11 +63,11 @@ struct FrontmostAppViewModelTests {
         ])
         let model = FrontmostAppViewModel(provider: provider)
         model.refresh()
-        #expect(model.displayName == "Finder")
+        #expect(model.label.resolved(in: .english) == "Frontmost: Finder")
         model.refresh()
-        #expect(model.displayName == FrontmostAppViewModel.unavailableDisplayName)
+        #expect(model.label.resolved(in: .english) == "Frontmost: —")
         model.refresh()
-        #expect(model.displayName == "Terminal")
+        #expect(model.label.resolved(in: .english) == "Frontmost: Terminal")
         #expect(provider.callCount == 3)
     }
 
