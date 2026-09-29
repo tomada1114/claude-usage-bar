@@ -8,7 +8,8 @@ description: >
   close condition, a `Depends on #N` line). Use when filing a GitHub issue, triaging
   or re-prioritizing the backlog, picking a `priority: P0`-`P3` label, choosing
   between `bug`/`enhancement`/`documentation`/`chore`, marking a tracking issue,
-  editing .github/labels.yml or an issue form, or running `just labels`.
+  editing .github/labels.yml or an issue form, running `just labels`, or routing a
+  friction or idea that came up while using the app.
 ---
 
 # Triaging Issues
@@ -103,3 +104,36 @@ blocker is open. The label is **not** removed automatically when the blocker clo
 whoever lands the blocking issue clears `blocked: dependency` by hand from every issue
 that named it. Do not assume the label update is someone else's automated job — it is
 a manual step in the same PR or a prompt follow-up that closes the blocker.
+
+## Requests from daily use
+
+A friction or an idea that comes up while using the app is routed the moment it is
+raised, so it is never lost in a chat log and never shipped unreviewed. Decide one of
+three outcomes:
+
+1. **File it now** when it stays inside the existing design (a default, a key binding,
+   copy, a small change to how an existing screen behaves) and is in scope under
+   `AGENTS.md`'s `## Product`. The request authorizes creating the issue and nothing
+   more: file it with a type label and a tier (`priority: P2` by default, per the table
+   above) and a body that meets "What an issue body must contain". Several requests in
+   one message get one issue each, unless they are one pull request's worth. Report
+   the numbers and stop; implementing waits for someone to pick the issue.
+2. **Park it** as `on hold` when it is worth keeping but not worth doing yet: it needs
+   more use to judge, it leans on a `## Product` non-goal, or it would need a design or
+   architecture decision first. File it the same way, add `on hold`, and give the
+   reason and what would change the call in a comment. It keeps its tier, and
+   `shipping-issues` skips it until the label comes off.
+3. **Drop it** without an issue when it contradicts a `## Product` non-goal or
+   duplicates an open issue (comment on that one instead). Say so in the reply, with
+   the reason, so the decision is visible rather than silent.
+
+A parked issue leaves the lane only by a decision, never by age:
+
+- **Promote** it by removing `on hold` once its reason no longer holds — the use it
+  was waiting on has happened, or the decision it needed was made. Re-check its tier;
+  it may now warrant `blocked: design` instead, if a real choice remains.
+- **Close** it as not planned when its reason became permanent — the app moved away
+  from it, or a later issue superseded it (link that one).
+
+Moving a request out of `## Product`'s non-goals is a human's call, not the triager's:
+parking or dropping it records that line rather than crossing it.

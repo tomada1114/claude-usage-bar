@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The `triaging-issues` skill's "Requests from daily use" section: a friction or
+  idea raised while using the app is filed now, parked as `on hold` with its reason,
+  or dropped with the reason stated, and a parked issue is promoted or closed only by
+  a decision.
+
 - The `starting-an-app` skill now ends the app-shape and sandbox-posture steps by
   writing ADR 0001 (app shape) and ADR 0002 (sandbox posture), as Proposed, in the
   new app's `docs/architecture/` tree.
