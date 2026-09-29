@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `changing-gates` records why `.githooks/pre-commit` stays lint-only (no
+  formatting, compiling, or related tests).
+
 - The `triaging-issues` skill's "Requests from daily use" section: a friction or
   idea raised while using the app is filed now, parked as `on hold` with its reason,
   or dropped with the reason stated, and a parked issue is promoted or closed only by

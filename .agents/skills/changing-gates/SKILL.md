@@ -169,6 +169,12 @@ neither still commits without the hook, so CI stays the backstop. It skips under
 the named `ALLOW_MISSING_GIT_HOOKS` opt-out, for an environment that genuinely cannot
 have git hooks.
 
+The hook stays lint-only by decision (#140): it never formats and re-stages, compiles,
+or runs related tests. A SwiftPM build takes tens of seconds and builds the worktree
+rather than the staged blobs, so it would check something other than the commit; and a
+slow or noisy hook teaches `--no-verify`, which also skips the staged secret guard. CI
+runs the build and tests. Do not reopen this without a new reason those costs miss.
+
 ## `scripts/guard/`
 
 `scripts/check-staged.sh` (the hook's "Staged guard" section) classifies each staged
