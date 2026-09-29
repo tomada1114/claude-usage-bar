@@ -56,9 +56,12 @@ instead of mentally overriding it.
 applies it by hand to a documentation-only issue.
 
 `ci` and `dependencies` are PR-only and never used for issue triage:
-`.github/workflows/pr-label.yml` labels a pull request from its Conventional Commits
-title type (`ci:` → `ci`, and likewise `feat:`/`fix:`/`docs:` → `enhancement`/`bug`/
-`documentation`), and Dependabot applies `dependencies` to its own pull requests.
+`.github/workflows/pr-label.yml` runs `scripts/label-pr.sh`, which labels a pull
+request from its Conventional Commits title type, `!` or not (`feat` → `enhancement`,
+`fix` → `bug`, `docs` → `documentation`, `ci` → `ci`, `deps` → `dependencies`, every
+other accepted type → `chore`), drops a type label a retitle left stale, and never
+creates a label. Dependabot also applies `dependencies` to its own pull requests, so
+the script never removes that one.
 
 There is no `security` label. A vulnerability is never filed as a public issue: it goes
 through `SECURITY.md`'s private reporting route (GitHub Security Advisories), which the

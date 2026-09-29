@@ -22,9 +22,9 @@
   color: fef2c0
   description: "Repository work: tooling, automation, refactor, hardening, or docs."
 
-# PR-only labels. `dependencies` is applied by Dependabot itself; `ci` is
-# applied by .github/workflows/pr-label.yml from a `ci:` PR title. Never used for issue
-# triage.
+# PR-only labels. `dependencies` is applied by Dependabot itself and by
+# scripts/label-pr.sh from a `deps:` PR title; `ci` by scripts/label-pr.sh from a
+# `ci:` title. Never used for issue triage.
 - name: dependencies
   color: 0366d6
   description: "A dependency version bump."

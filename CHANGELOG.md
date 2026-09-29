@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `scripts/label-pr.sh`, tested by `scripts/tests/label-pr_test.sh`, now labels pull
+  requests for `.github/workflows/pr-label.yml`, which runs it from a checkout of the
+  base SHA. It maps every type the PR title check accepts, including `!` (`chore`,
+  `deps`, and the rest were unlabeled before), removes a type label a retitle left
+  stale, and never creates a label: the old colorless `gh label create` fallback is
+  gone, and a label missing from `.github/labels.yml` fails the job instead.
 - A weekly `.github/workflows/gitleaks.yml` workflow that runs gitleaks 8.30.1 over
   the full git history to find leaked secrets. The release binary is pinned and its
   checksum verified, the job has `contents: read` only, and findings are redacted in
