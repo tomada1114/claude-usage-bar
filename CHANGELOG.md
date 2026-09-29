@@ -347,6 +347,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the workflow conventions move to `changing-gates/references/`, and the pre-commit
   hook recovery steps to `smart-commit/references/`, each linked from the body with no
   rule dropped (#166).
+- `scripts/bootstrap.sh`'s "Next steps" and `README.md`'s "Using This Template" now
+  point a new app at the `docs/architecture/roadmap.md` skeleton right after its
+  `## Product` section.
 
 - `.github/dependabot.yml` groups minor and patch updates per ecosystem (SwiftPM and
   GitHub Actions), so one upstream release arrives as one PR; majors still get their
