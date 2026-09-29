@@ -28,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
+      # Read access for the base-SHA checkout below; a private repository refuses
+      # the checkout without it.
+      contents: read
       pull-requests: write
     steps:
       # The base SHA, never the PR head: a pull request cannot change the script

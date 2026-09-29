@@ -525,6 +525,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `pr-label.yml`'s job now has `contents: read`, so its base-SHA checkout works in a
+  private repository cut from the template, not only a public one (#196).
+
 - The release workflow no longer strips `App/MyApp.entitlements` (and with it the App
   Sandbox) from an ad-hoc-signed release: it keeps the signature `xcodebuild` applied
   instead of re-signing without `--entitlements`, and a new step fails the release
