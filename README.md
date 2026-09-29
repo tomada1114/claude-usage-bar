@@ -48,11 +48,9 @@ just run       # build (Debug) and launch; the badge appears in the menu bar
 `just logs` streams the app's log (the `usage` category says whether each refresh
 succeeded, and why not). Quit from the menu, or `pkill -x ClaudeUsageBar`.
 
-**Pending before the numbers appear:** the app still ships the template's
-sandboxed entitlements, and a sandboxed build cannot reach the network, so it shows
-`--` and "Couldn’t reach the usage server". The fix is a one-file entitlements change
-the owner makes by hand; [ADR-0002](docs/architecture/adr/0002-sandbox-posture.md)
-records both candidate changes.
+The app runs without the App Sandbox, so it can run `/usr/bin/security` and reach
+the usage endpoint; [ADR-0002](docs/architecture/adr/0002-sandbox-posture.md) records
+why.
 
 ## How it gets the numbers — and the caveat
 

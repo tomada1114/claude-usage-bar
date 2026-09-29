@@ -20,27 +20,23 @@ ADR ([the index](README.md)) and linked from here. What has shipped is in
 The owner decides what the page says; an agent proposes a change to it in a pull
 request, and the change lands only once the owner has approved it.
 
-- **Last reviewed:** 2026-09-29 — the repository has no issue tracker yet, so no line
-  below links an issue
+- **Last reviewed:** 2026-09-29 — no issue is filed yet, so no line below links one
 
 ## Now
 
 The outcomes being worked on, one to three of them. Each has its issues filed.
 
-- **The badge shows real numbers on the owner's Mac** — the app is built and every
-  gate passes, but the shipped entitlements keep it sandboxed without network access, so
-  it shows `--`. Done when: after the owner applies the entitlements change
-  [ADR-0002](adr/0002-sandbox-posture.md) proposes and accepts ADRs 0001–0003, `just run`
-  shows the weekly percentage and the menu's reset times.
+- **The owner settles the remaining ADRs** — [ADR-0002](adr/0002-sandbox-posture.md)
+  (sandbox off) is accepted and the badge shows real numbers. Done when: the owner
+  accepts or amends [ADR-0001](adr/0001-app-shape.md) and
+  [ADR-0003](adr/0003-usage-data-source.md).
 
 ## Next
 
 The outcomes that follow once Now's are done. An issue may already exist for one, often
 parked as `on hold`; none is required.
 
-- **The repository is on GitHub with its gates live** — so CI, not only local gates,
-  guards every change. Before it moves up: the owner creates the remote, then runs
-  `just labels` and `just ruleset`.
+Nothing is ordered here yet.
 
 ## Later
 
