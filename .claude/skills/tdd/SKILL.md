@@ -77,8 +77,8 @@ NEVER lower the floor, exclude paths, or move logic out of Core to dodge it.
 
 ## Step 5: Commit
 
-Tests and their implementation land in the **same commit** (use the
-`smart-commit` skill). Red tests are never committed alone.
+Tests and their implementation land in the **same commit** (**REQUIRED:**
+`smart-commit`). Red tests are never committed alone.
 
 ## Anti-patterns (hard prohibitions)
 

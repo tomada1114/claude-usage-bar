@@ -130,7 +130,7 @@ Apply each PR's version change by hand, not by merging bot branches:
 
 Then `just check`. A SwiftLint or SwiftFormat bump may fire new rules or reformat
 code: fix the code on this branch (`just fix`, then hand edits), never disable or relax
-a rule to get green — that is weakening a gate. Open the PR with the `create-pr` skill,
+a rule to get green — that is weakening a gate. Open the PR (**REQUIRED:** `create-pr`),
 title `deps: combine dependency bumps (#a, #b, …)`, listing each superseded PR. Once its
 CI is green and it is merged, close each superseded PR with a comment naming the
 combined PR. Opening and merging the combined PR are inside the approved batch only if

@@ -59,7 +59,7 @@ scripts/bootstrap.sh CoolApp --bundle-id-prefix io.example --github-user janedoe
 - **`replace()`** walks `git ls-files`, so only tracked files are touched: stage a new
   file before running if it should be renamed too. It skips binary and empty files and
   leaves a file without a match untouched. This is why the script refuses to run
-  outside a git checkout (see `writing-repo-scripts`).
+  outside a git checkout (**BACKGROUND:** `writing-repo-scripts`).
 - **Keep markers:** a line containing the keep-begin marker (the text `bootstrap:keep-`
   followed by `begin`) through the next line containing the keep-end marker is never
   rewritten. The passages that explain the placeholders — the script's header,

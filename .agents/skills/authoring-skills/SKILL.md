@@ -106,6 +106,25 @@ A skill added, renamed, or deleted gets its row in `AGENTS.md`'s Skills table up
 the same commit, and widening a skill's subject means widening its row. Enforced by:
 `scripts/checks/skills-index-complete.sh` (the row set, not its wording).
 
+## Conventions
+
+- **Cross-reference markers.** A pointer that sends the reader to a sibling skill (by
+  name) or to this skill's own `references/` file (by relative path) as a step of the
+  task carries one of two markers and no other: `**REQUIRED:**` when the task cannot be
+  finished correctly without it, `**BACKGROUND:**` when it only explains why. A mention
+  that only names an owner — the ownership block, a scope note, an attribution such as
+  "(`changing-gates`)" — stays bare, with no marker and no "see".
+- **Deletable illustrations.** Example code in a skill is an illustration no build or
+  test depends on, and a reader may delete it or replace it with their own; the
+  template's example code a skill points to is deleted by an app, too
+  (`docs/getting-started.md` › "Removing the example code"). State the rule in its own
+  sentence and the example in the next, so the rule still reads once the example is gone.
+- **Platform skills.** A skill about a macOS or Apple API surface, such as
+  `integrating-system-apis`, holds only what this repository decided there and why. It
+  links Apple's documentation by URL instead of restating it, and a version,
+  availability, or policy it must state carries its URL and a checked date
+  (**BACKGROUND:** `recording-architecture-decisions` › "Fact discipline").
+
 ## Where a skill lives
 
 A skill lives in `.agents/skills/` (mirrored to `.claude/skills/`), and the template

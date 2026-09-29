@@ -50,10 +50,10 @@ so it belongs in the single up-front ask. A denied grant is worse than an error:
 capture still succeeds and still writes a PNG, showing the desktop where the windows
 should be. Look at the file you wrote before believing it.
 
-A menu-bar-only app (`LSUIElement`, `MenuBarExtra` — see `starting-an-app`) has no
-ordinary window to capture until its menu is open, and opening that menu is a click only
-a human or an accessibility grant can make. Prefer a log line or a Core test for such a
-build, and fall back to a full-screen capture with the menu already open.
+A menu-bar-only app (`LSUIElement`, `MenuBarExtra` — **BACKGROUND:** `starting-an-app`)
+has no ordinary window to capture until its menu is open, and opening that menu is a
+click only a human or an accessibility grant can make. Prefer a log line or a Core test
+for such a build, and fall back to a full-screen capture with the menu already open.
 
 ## Drive a flow with a throwaway XCUITest
 
