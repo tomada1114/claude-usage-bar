@@ -160,7 +160,7 @@ neighboring skills use.
 A script shipped under `.agents/skills/<name>/scripts/` follows `AGENTS.md`'s
 "Repository scripts" section exactly like one under `scripts/`: `#!/usr/bin/env bash`
 with `set -euo pipefail`, bash 3.2-compatible, `shellcheck`-clean (`scripts/lint.sh`
-checks every tracked `*.sh`, at any depth), the `ERR_<STAGE>_<WHAT>` failure contract,
+checks every tracked `*.sh` at any depth but the `.claude/skills/` mirror), the `ERR_<STAGE>_<WHAT>` failure contract,
 and a test under `scripts/tests/` built on `scripts/tests/lib.sh`, which
 `scripts/tests/run.sh` (`just test-scripts`) runs. Keep it a thin dispatcher; anything
 with real branching logic belongs in `scripts/`, where it is easier to find and test.

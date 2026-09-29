@@ -181,4 +181,5 @@ A new script usually lands with more than its own file:
 - a row in `AGENTS.md`'s "Validating a change" when no existing row covers it, and an
   Enforcement layers row when it enforces something (**REQUIRED:** `changing-gates`).
 
-`shellcheck` needs no wiring: `scripts/lint.sh` checks every tracked `*.sh`.
+`shellcheck` needs no wiring: `scripts/lint.sh` checks every tracked `*.sh`
+(except the generated `.claude/skills/` mirror).

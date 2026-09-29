@@ -80,10 +80,45 @@ case_whole_repo_outside_work_tree() {
     [ ! -e "${STUB_BIN}/swiftformat.log" ] || _fail "swiftformat ran outside a work tree"
 }
 
+# A throwaway repository holding a copy of lint.sh, one authored skill script, and
+# its generated mirror copy, with every tool stubbed: shellcheck is handed the
+# authored script and never the mirror.
+case_shellcheck_skips_skills_mirror() {
+    local repo tool
+    repo=$(make_temp_repo)
+    mkdir -p "${repo}/scripts" "${repo}/.githooks" "${repo}/.agents/skills/s/scripts" \
+        "${repo}/.claude/skills/s/scripts"
+    cp "${LINT}" "${repo}/scripts/lint.sh"
+    printf '#!/usr/bin/env bash\nexit 0\n' >"${repo}/scripts/sync-agents.sh"
+    chmod +x "${repo}/scripts/sync-agents.sh"
+    : >"${repo}/.githooks/pre-commit"
+    : >"${repo}/.agents/skills/s/scripts/run.sh"
+    : >"${repo}/.claude/skills/s/scripts/run.sh"
+    git -C "${repo}" add -A
+    for tool in swiftformat swiftlint shellcheck actionlint typos; do
+        stub_command "${tool}" 'exit 0'
+    done
+    capture "${BASH}" "${repo}/scripts/lint.sh"
+    assert_exit 0
+    grep -q '.agents/skills/s/scripts/run.sh' "${STUB_BIN}/shellcheck.log" \
+        || _fail "shellcheck was not given the authored skill script"
+    if grep -q '.claude/skills/' "${STUB_BIN}/shellcheck.log"; then
+        _fail "shellcheck was given the generated .claude/skills/ mirror"
+    fi
+}
+
+# typos reads its scope from typos.toml, so the exclusion is asserted there.
+case_typos_skips_skills_mirror() {
+    grep -q '^extend-exclude = .*"\.claude/skills"' "${REPO_ROOT}/typos.toml" \
+        || _fail "typos.toml does not exclude .claude/skills"
+}
+
 run_case "an unknown flag fails ERR_LINT_USAGE" case_unknown_flag
 run_case "a wrong argument count fails ERR_LINT_USAGE" case_wrong_argument_count
 run_case "--staged-tree with a missing directory fails ERR_LINT_USAGE" case_staged_tree_missing_dir
 run_case "a PATH without git fails ERR_LINT_TOOL_MISSING" case_tool_missing_whole_repo
 run_case "--staged-tree without swiftlint fails ERR_LINT_TOOL_MISSING" case_tool_missing_staged_tree
 run_case "whole-repository mode outside a work tree fails ERR_LINT_NOT_A_REPO" case_whole_repo_outside_work_tree
+run_case "shellcheck skips the generated .claude/skills/ mirror" case_shellcheck_skips_skills_mirror
+run_case "typos.toml excludes the generated .claude/skills/ mirror" case_typos_skips_skills_mirror
 finish
