@@ -4,7 +4,9 @@ Every snippet below was compiled in a clone of this repository, as files under
 `Packages/MyAppKit/Sources/`, with `swift build` (Swift 6 language mode, every warning an
 error — `Package.swift`'s `strictSettings`), `swiftlint --strict`, and
 `swiftformat --lint`. They are the shape that passes all three, which is not the shape
-most sample code on the internet uses.
+most sample code on the internet uses. What each API does is Apple's to document and is
+linked, not restated (links checked 2026-09-28); what is written out here is the shape
+this repository chose and why.
 
 ## The port, in Core
 
@@ -160,9 +162,9 @@ public final class KeyPressEventTap: KeyPressObserving {
 
 Three things in there are the whole lesson.
 
-**The refcon round-trip.** `Unmanaged.passRetained(self).toOpaque()` hands the OS a raw
-pointer with a `+1` retain ARC cannot see; `Unmanaged<T>.fromOpaque(_:).takeUnretainedValue()`
-reads it back without changing the count; `…​.release()` balances it. Count the paths out
+**The refcon round-trip.** What each call does is [`Unmanaged`](https://developer.apple.com/documentation/swift/unmanaged)'s
+documentation (checked 2026-09-28). The decision is `passRetained` in, `takeUnretainedValue()` in the
+callback, one `release()` out. Count the paths out
 of `start()`: the `tapCreate` failure releases before throwing, and `stop()` releases on
 success. Miss one and the adapter leaks forever — and because the object is retained, no
 `deinit` will ever fire to tell you.
@@ -172,10 +174,10 @@ structurally guaranteed to outlive the tap (an `App/`-level singleton, say). Pre
 `passRetained`: the leak it risks is visible in Instruments, while the dangling pointer
 the other risks is a crash in someone else's process.
 
-**The re-enable.** `kCGEventTapDisabledByTimeout` arrives when the OS decides the callback
-took too long; `kCGEventTapDisabledByUserInput` arrives for reasons outside the app. Both
-are delivered as event *types* through the same callback, not as errors, and an app that
-ignores them silently stops receiving anything. Re-enabling is the required response —
+**The re-enable.** [`tapDisabledByTimeout`](https://developer.apple.com/documentation/coregraphics/cgeventtype/tapdisabledbytimeout)
+and [`tapDisabledByUserInput`](https://developer.apple.com/documentation/coregraphics/cgeventtype/tapdisabledbyuserinput) (checked 2026-09-28)
+arrive as event *types* through the same callback, not as errors, and an app that ignores
+them silently stops receiving anything. This repository re-enables on both —
 and if timeouts repeat, the real fix is that the callback does too much: translate and
 hop, never work.
 
@@ -187,8 +189,8 @@ switched off, and it is written to be safe to call twice.
 
 ## When `MainActor.assumeIsolated` is a fact, and when it is a lie
 
-`assumeIsolated` asserts the current thread is already the main actor's and traps if it
-is not. It is legitimate here for one concrete reason: the callback runs on the thread
+[`MainActor.assumeIsolated`](https://developer.apple.com/documentation/swift/mainactor/assumeisolated(_:file:line:)) traps when
+the caller is not already on the main actor (checked 2026-09-28). It is legitimate here for one concrete reason: the callback runs on the thread
 whose run loop owns the source, and `start()` added that source to `CFRunLoopGetMain()`.
 Change that line to a source on a private thread and every `assumeIsolated` in the file
 becomes a crash waiting for the first event.
@@ -216,6 +218,8 @@ Task { @MainActor in tap.inspect(event) }         // ✗ same
 Build the `KeyPress` first, then hop with it.
 
 ## `AXObserver`: same shape, different teardown
+
+The API is [`AXObserver`](https://developer.apple.com/documentation/applicationservices/axobserver) (checked 2026-09-28).
 
 ```swift
 private let focusedWindowCallback: AXObserverCallback = { _, _, notification, refcon in
@@ -313,7 +317,8 @@ error: reference to var 'kAXTrustedCheckOptionPrompt' is not concurrency-safe
 because it involves shared mutable state
 ```
 
-`@preconcurrency import ApplicationServices` silences it for the whole file. That is
+`@preconcurrency import ApplicationServices` silences it for the whole file
+([SE-0337](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0337-support-incremental-migration-to-concurrency-checking.md), checked 2026-09-28). That is
 legitimate exactly when the declaration is immutable in fact and only `var` in the
 header — a `CFString` constant the framework initializes once at load, like this one. It
 is *not* a licence to reach for the attribute whenever a framework complains: it downgrades
@@ -332,7 +337,8 @@ non-`Sendable`, as this repository's toolchain confirms — each of them in a
 1. **Do not move it.** Keep it in the `@MainActor` adapter and expose values. This is the
    answer for almost every adapter here.
 2. **Move it once, with `sending`.** When one isolation domain genuinely hands ownership
-   to another, `func handOff(_ element: sending AXUIElement)` compiles and is checked:
+   to another, `func handOff(_ element: sending AXUIElement)` compiles and is checked
+   ([SE-0430](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0430-transferring-parameters-and-results.md), checked 2026-09-28):
    the compiler proves the caller kept no reference.
 3. **A wrapper with `@unchecked Sendable`** — last, rarely, and only with a comment that
    proves the invariant, which `.claude/rules/swift.md` requires. In an adapter that

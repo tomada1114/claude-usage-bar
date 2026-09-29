@@ -1,18 +1,18 @@
 # TCC-gated APIs
 
-TCC is macOS's privacy database: the thing that decides whether this app may watch keys,
-read another app's UI, or see the screen. Its defining property, and the source of nearly
-every bug in this area, is that **it never tells the app anything**. A denied call does
-not throw; it returns nothing, or nothing happens. A grant does not arrive as a
-notification; the app finds out by asking again.
+This file records what this repository decided about TCC-gated APIs and why. What an
+API returns is Apple's to document; each row links the page, checked 2026-09-28. The
+decisions below all rest on one observed property: **TCC never tells the app anything**.
+A denied call does not throw; it returns nothing, or nothing happens. A grant does not
+arrive as a notification; the app finds out by asking again.
 
 ## Which grant, and how it is refused
 
 | Capability | Grant | How a refusal looks in code |
 |---|---|---|
-| `CGEvent.tapCreate` | Input Monitoring (plus Accessibility to modify events) | returns `nil` — the same as a malformed argument |
-| `AXObserverAddNotification`, `AXUIElementCopyAttributeValue` | Accessibility | `AXError.apiDisabled` or `.notImplemented` |
-| `ScreenCaptureKit`, `CGWindowListCreateImage` | Screen Recording | empty or blank content, not an error |
+| [`CGEvent.tapCreate`](https://developer.apple.com/documentation/coregraphics/cgevent/tapcreate(tap:place:options:eventsofinterest:callback:userinfo:)) | Input Monitoring (plus Accessibility to modify events) | returns `nil` — the same as a malformed argument |
+| [`AXObserver`](https://developer.apple.com/documentation/applicationservices/axobserver), [`AXUIElement`](https://developer.apple.com/documentation/applicationservices/axuielement_h) functions | Accessibility | `AXError.apiDisabled` or `.notImplemented` |
+| [`ScreenCaptureKit`](https://developer.apple.com/documentation/screencapturekit), `CGWindowListCreateImage` | Screen Recording | empty or blank content, not an error |
 | `RegisterEventHotKey`, `NSWorkspace` | none | — |
 
 None of these three has an `INFOPLIST_KEY_NS…UsageDescription` — no such key exists for
@@ -52,11 +52,14 @@ public struct SystemAccessibilityTrust: AccessibilityTrustChecking {
 }
 ```
 
-`AXIsProcessTrusted()` is the check with no side effect; `AXIsProcessTrustedWithOptions`
-with `kAXTrustedCheckOptionPrompt: true` is the check *and* the prompt. The distinction
-matters because the prompt is shown at most once per app per user — spending it at launch,
-before the user has any idea what the app is for, is the most common way to lose the
-grant permanently. Prompt when the user first reaches for the feature that needs it.
+The check without a side effect and the check that prompts are Apple's
+[`AXIsProcessTrusted`](https://developer.apple.com/documentation/applicationservices/1460720-axisprocesstrusted) and
+[`AXIsProcessTrustedWithOptions`](https://developer.apple.com/documentation/applicationservices/1459186-axisprocesstrustedwithoptions)
+with [`kAXTrustedCheckOptionPrompt`](https://developer.apple.com/documentation/applicationservices/kaxtrustedcheckoptionprompt)
+(checked 2026-09-28). The decision here: this repository treats the prompt as spendable once
+per app per user, because in practice macOS does not show it again — so it is never
+spent at launch, before the user knows what the app is for. Prompt when the user first
+reaches for the feature that needs it.
 
 `@preconcurrency import` is there for `kAXTrustedCheckOptionPrompt`, which Swift 6 sees
 as shared mutable state — see `c-callbacks.md` › "`@preconcurrency import`".

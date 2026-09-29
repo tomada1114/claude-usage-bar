@@ -372,6 +372,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `scripts/lint.sh`'s `shellcheck` and `typos` (`typos.toml`) no longer scan the
   generated `.claude/skills/` mirror, which doubled every finding in `.agents/skills/`;
   the mirror stays held byte-identical by `scripts/sync-agents.sh --check`
+- The `integrating-system-apis` skill follows the platform-skill convention: its
+  `SKILL.md` and both references link each Apple API they rely on (developer.apple.com,
+  checked 2026-09-28) instead of restating its behavior, and word the rest as what this
+  repository decided and why.
 - The `changing-gates` and `smart-commit` skills are back under the 200-line `SKILL.md`
   body cap: the `.swiftlint.yml` custom-rule detail, the `scripts/guard/` pattern list,
   and the workflow conventions move to `changing-gates/references/`, and the pre-commit

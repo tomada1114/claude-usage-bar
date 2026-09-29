@@ -49,21 +49,25 @@ each adapter to justify an `assumeIsolated` of its own.
 Pick the cheapest mechanism that answers the question, because the cost is the grant the
 user has to give and the support burden of the ones who will not.
 
+The table is this repository's choice of mechanism; each API's behavior is Apple's, so
+follow its link rather than a paraphrase here (links checked 2026-09-28).
+
 | You need | Reach for | Grant it costs |
 |---|---|---|
-| A system-wide hotkey | Carbon `RegisterEventHotKey` | none |
-| Which app is frontmost, now or on switch | `NSWorkspace` | none |
-| Every key press, anywhere | `CGEventTap` | Input Monitoring (Accessibility too, to modify events) |
-| Another app's windows, text, or UI tree | `AXObserver` / `AXUIElement` | Accessibility |
-| Window contents or a screenshot | `ScreenCaptureKit` | Screen Recording |
+| A system-wide hotkey | Carbon `RegisterEventHotKey` (no current Apple reference page) | none |
+| Which app is frontmost, now or on switch | [`NSWorkspace`](https://developer.apple.com/documentation/appkit/nsworkspace) | none |
+| Every key press, anywhere | [`CGEvent.tapCreate`](https://developer.apple.com/documentation/coregraphics/cgevent/tapcreate(tap:place:options:eventsofinterest:callback:userinfo:)) | Input Monitoring (Accessibility too, to modify events) |
+| Another app's windows, text, or UI tree | [`AXObserver`](https://developer.apple.com/documentation/applicationservices/axobserver) / [`AXUIElement`](https://developer.apple.com/documentation/applicationservices/axuielement_h) | Accessibility |
+| Window contents or a screenshot | [`ScreenCaptureKit`](https://developer.apple.com/documentation/screencapturekit) | Screen Recording |
 
-Carbon is deprecated and still the only hotkey API that needs no grant — that is the
-trade, and it is usually the right one. An event tap that only *listens* still needs
+This repository prefers the Carbon hotkey: it is deprecated, and it is still the only
+hotkey API this repository has found that needs no grant — that is the trade, and it is
+usually the right one. An event tap that only *listens* still needs
 Input Monitoring, so a hotkey implemented as a tap costs a permission the Carbon one does
 not. Accessibility and Input Monitoring are never granted to a sandboxed process, so
 either of them forces the app out of the sandbox and off the Mac App Store; Screen
 Recording is a grant a sandboxed app can hold (`docs/distribution.md` › "Sandboxed or
-not"). That decision is a human's (`starting-an-app` › "Deciding the sandbox posture").
+not" records this; Apple's [App Sandbox](https://developer.apple.com/documentation/security/app-sandbox), checked 2026-09-28). That decision is a human's (`starting-an-app` › "Deciding the sandbox posture").
 
 ## Three rules that never bend
 
@@ -101,13 +105,15 @@ document.
 
 ## The references
 
-- [references/c-callbacks.md](references/c-callbacks.md) — the compile-proven patterns:
+- **REQUIRED:** [references/c-callbacks.md](references/c-callbacks.md) when writing an
+  adapter's callback — the compile-proven patterns:
   the `CGEventTap` adapter end to end (refcon, re-enable after
   `kCGEventTapDisabledByTimeout`, teardown), `AXObserver` and Carbon hotkey variants,
   when `MainActor.assumeIsolated` is a fact and when it is a lie, `@preconcurrency
   import`, non-`Sendable` CF types, and the SwiftLint rules that reject the shape most
   sample code on the internet uses.
-- [references/tcc-permissions.md](references/tcc-permissions.md) — checking and prompting
+- **REQUIRED:** [references/tcc-permissions.md](references/tcc-permissions.md) when the
+  API is TCC-gated — checking and prompting
   with `AXIsProcessTrustedWithOptions`, why a grant arrives with no callback and what to
   do about it, degraded-state UX, the `Info.plist` usage keys, the rebuild-loses-the-grant
   loop and its fix, and what can and cannot be tested where.
