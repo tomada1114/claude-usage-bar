@@ -25,26 +25,28 @@ module) are enforced from day one.
 
 ## Product
 
-**TODO: in the template this section is a placeholder.** It is the one part of this
-file about the application rather than the harness, so every repository cut from the
-template writes its own: without it an agent implementing an issue here has no in-repo
-answer to "is this in scope?". Fill in every `TODO:` below right after the rename
-(`README.md`'s "Using This Template", step 3) — once `scripts/bootstrap.sh` has run,
-`just check-harness` fails while one is left
-(`scripts/checks/product-section-filled.sh`).
-
-- **What it is, and who it is for** — TODO: one paragraph. The problem it solves, and
-  whose problem that is.
-- **The core interaction** — TODO: the one thing a user does most. If the app does not
-  do this well, nothing else about it matters.
-- **Non-goals** — TODO: what this app deliberately does not do, even where it would be
-  easy. A first version's cut list is longer than its feature list, and this is the
-  line an eager implementer crosses first: moving anything from here to a goal is a
-  human's decision, not an implementer's.
-- **Where these decisions are recorded** — TODO: where the reasoning behind the three
-  entries above lives — an ADR under `docs/architecture/` (see "Before changing the
-  architecture"), a design issue, or another decision log — so a reader can find why
-  and not only what.
+- **What it is, and who it is for** — ClaudeUsageBar is a macOS menu-bar agent for a
+  Claude subscriber who uses Claude Code on this Mac and wants to see, at a glance, how
+  much of the weekly usage limit is left before it runs out mid-task. It reads the
+  OAuth token Claude Code already keeps in the login keychain and polls the usage
+  endpoint Claude Code itself calls, so it needs no sign-in or setup of its own.
+- **The core interaction** — glancing at the menu bar: the rounded weekly percentage,
+  a bare number such as `76` in a thin outlined monochrome badge, legible at menu bar
+  text size and kept current every two minutes. Clicking it opens a native menu with the
+  weekly and five-hour percentages, when each resets, why the last refresh failed (if it
+  did, beside the last good numbers), when the numbers arrived, and Quit.
+- **Non-goals** — no colors, thresholds, or warning states on the badge; no
+  notifications; no limits beyond the weekly and five-hour windows (no per-model, Opus,
+  or other breakdowns the endpoint reports); no manual refresh item; no token refresh —
+  an expired token is fixed by running Claude Code; no settings; no history or charts;
+  no Windows or Linux build; no Mac App Store release. Moving any of these into scope is
+  the owner's decision.
+- **Where these decisions are recorded** — the ADRs under `docs/architecture/adr/`:
+  [0001](docs/architecture/adr/0001-app-shape.md) (menu-bar agent),
+  [0002](docs/architecture/adr/0002-sandbox-posture.md) (sandbox posture), and
+  [0003](docs/architecture/adr/0003-usage-data-source.md) (the keychain token, the
+  undocumented usage endpoint, and polling); the index is
+  `docs/architecture/README.md`, and direction is `docs/architecture/roadmap.md`.
 
 ## Quick Reference
 
@@ -58,7 +60,7 @@ just verify-hooks  # Verify the git hooks are installed and executable (scripts/
 just test-scripts  # Run the plain-bash tests for scripts/ and the skills' Python suites (scripts/tests/run.sh)
 just check-harness # Re-assert the harness's claims about itself (scripts/checks/run-all.sh)
 just test      # Run tests with the 80% line / 75% function coverage floors on ClaudeUsageBarCore
-just test-fast CounterTests  # Run only the matching tests, no coverage floor (iteration only)
+just test-fast UsageResponseTests  # Run only the matching tests, no coverage floor (iteration only)
 just test-local    # Run the local-machine adapter tests (ClaudeUsageBarPlatformTests) CI cannot run
 just build     # Build the app (Debug)
 just run       # Build (Debug), quit any running instance, and launch the fresh build
@@ -94,7 +96,7 @@ job call.
 | A fake or a port contract under `Packages/ClaudeUsageBarKit/Tests/ClaudeUsageBarTestSupport/` | `just test` (the contract against the fake); then `just test-local` (the contract against the real adapter) |
 | Formatting or style of any Swift file | `just lint` |
 | A SwiftLint or SwiftFormat violation that may be auto-fixable | `just fix` (formats, runs `swiftlint --fix`, then `just lint` reports what still needs a hand edit) |
-| One Core suite, while iterating | `just test-fast <filter>` (e.g. `just test-fast CounterTests`) — no coverage floor, so finish with `just test` |
+| One Core suite, while iterating | `just test-fast <filter>` (e.g. `just test-fast UsageResponseTests`) — no coverage floor, so finish with `just test` |
 | `Packages/ClaudeUsageBarKit/Sources/ClaudeUsageBarCore/Resources/Localizable.xcstrings`, or a `LocalizedStringResource` in Core | `just test` (`LocalizationTests` scans Core's `LocalizedStringResource(…)` calls and holds their keys and English to the catalog); `just build` to compile the catalog into the app |
 | `project.yml`, or `Config/Debug.xcconfig` | `just generate && just build` |
 | A test under `LaunchUITests/`, or launch behavior | `just uitest` |
@@ -149,8 +151,8 @@ Config/Debug.xcconfig       # Debug-only build settings project.yml cannot expre
   declares; a Core test substitutes a fake for that port, and `App/` picks the real one.
   Adapters translate and never decide — a decision belongs in Core, which is why
   Platform stays outside the coverage floor (`scripts/coverage.sh` measures Core only).
-  The worked example is `FrontmostAppProviding` / `WorkspaceFrontmostAppProvider`
-  (`docs/architecture.md` › Ports and adapters)
+  The worked examples are `OAuthTokenProviding` / `SecurityCLITokenProvider` and
+  `UsageFetching` / `URLSessionUsageFetcher` (`docs/architecture.md` › Ports and adapters)
 - The translation an adapter does *is* checked, just not by a gate: `Tests/ClaudeUsageBarPlatformTests`
   runs it against the real OS behind the `.requiresLocalMachine` opt-in, so a human runs
   it with `just test-local` and puts the output in the PR, while `just test` and CI

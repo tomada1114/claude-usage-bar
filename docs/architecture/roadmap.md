@@ -1,13 +1,5 @@
 # Roadmap
 
-<!--
-The template ships this page as a skeleton, the way it ships AGENTS.md's `## Product`
-as one: an app cut from the template replaces every `TODO:` line below once its
-`## Product` section is written. Nothing checks this page for leftover markers; the
-`steering-the-roadmap` skill says who changes it, when, and from what. Delete this
-comment when the page is first filled in.
--->
-
 This page records the app's direction: the outcomes it is working toward now, the ones
 that come next, and the ones only intended for later. It sits between two other homes
 and repeats neither:
@@ -28,28 +20,33 @@ ADR ([the index](README.md)) and linked from here. What has shipped is in
 The owner decides what the page says; an agent proposes a change to it in a pull
 request, and the change lands only once the owner has approved it.
 
-- **Last reviewed:** TODO: YYYY-MM-DD, the date this page was last checked against the
-  open issues
+- **Last reviewed:** 2026-09-29 — the repository has no issue tracker yet, so no line
+  below links an issue
 
 ## Now
 
 The outcomes being worked on, one to three of them. Each has its issues filed.
 
-- TODO: **[an outcome, as what a user can do]** — why it comes first, in one sentence.
-  Issues: #N, #N. Done when: [what can be observed — a launch, a `just` recipe, a
-  behavior in the running app — not a task that was finished].
+- **The badge shows real numbers on the owner's Mac** — the app is built and every
+  gate passes, but the shipped entitlements keep it sandboxed without network access, so
+  it shows `--`. Done when: after the owner applies the entitlements change
+  [ADR-0002](adr/0002-sandbox-posture.md) proposes and accepts ADRs 0001–0003, `just run`
+  shows the weekly percentage and the menu's reset times.
 
 ## Next
 
 The outcomes that follow once Now's are done. An issue may already exist for one, often
 parked as `on hold`; none is required.
 
-- TODO: **[an outcome]** — why it follows Now. Before it moves up: [an ADR to write, an
-  outcome in Now to land, an open question for the owner]. Issues, if any: #N.
+- **The repository is on GitHub with its gates live** — so CI, not only local gates,
+  guards every change. Before it moves up: the owner creates the remote, then runs
+  `just labels` and `just ruleset`.
 
 ## Later
 
 Direction the app intends to take but has not ordered. No issue is filed for a line
 here, apart from a parked one that a line names.
 
-- TODO: **[an outcome]** — what would bring it forward.
+- **Survive a change to the undocumented endpoint** — what would bring it forward: the
+  endpoint's shape changing, or Anthropic publishing a supported usage API
+  ([ADR-0003](adr/0003-usage-data-source.md)).
