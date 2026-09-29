@@ -13,6 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the full git history to find leaked secrets. The release binary is pinned and its
   checksum verified, the job has `contents: read` only, and findings are redacted in
   the log. `.gitleaksignore` lists the exact fingerprints of known fake fixtures.
+- A function-coverage floor beside the 80% line floor on `MyAppCore`:
+  `scripts/coverage.sh` (`just test`, CI's test and release jobs) also sums llvm-cov's
+  function counts for `Sources/MyAppCore/` from the same export and fails below
+  `readonly FUNCTION_COVERAGE_FLOOR=75` with `ERR_COVERAGE_FUNCTIONS_BELOW_FLOOR`, so a
+  Core function no test calls can no longer hide under the line floor. Measured when
+  set: 19 of 23 functions (82.6%) — every named function is tested, and the four misses
+  are compiler-generated autoclosures (`os.Logger` interpolations, a
+  `preconditionFailure` message) that llvm-cov counts as functions. The per-file report
+  now shows lines and functions, and `scripts/tests/coverage_test.sh` covers the new
+  comparison.
 - Three harness checks, run by `just check-harness`, for lists that were kept in sync
   by hand: `scripts/checks/core-ban-lists-agree.sh` fails when `.swiftlint.yml`'s
   `no_ui_import_in_core` regex and `ArchitectureBoundaryTests.forbiddenModules` ban

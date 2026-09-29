@@ -106,17 +106,18 @@ entry on that PR, never to skip the bump silently. The Xcode pin lives in
 
 ## `scripts/coverage.sh`
 
-It gates on line coverage of `Sources/MyAppCore/` only, by filtering llvm-cov's report
-to that path. `MyAppUI` and `MyAppPlatform` are outside it because an adapter or a view
+It gates on line and function coverage of `Sources/MyAppCore/` only, by filtering
+llvm-cov's report to that path. `MyAppUI` and `MyAppPlatform` are outside it because an adapter or a view
 holds translation rather than a decision (`docs/architecture.md` › Ports and adapters) —
 not because nothing links them: `MyAppPlatformTests` links `MyAppPlatform`, and its
 tests are skipped unless `RUN_LOCAL_MACHINE_TESTS=1` (`just test-local`), so they add no
 coverage under `just test` either way. Measuring Platform would therefore gate on
 whether a human opted in, which is why the filter is a path and not a target list. The
-floor is
-`readonly COVERAGE_FLOOR=80` in the script and nothing else — no environment variable or
-flag moves it, so every change to it is a reviewed diff of this file, and a change is
-only ever a raise. The script rejects the environment override it used to read with
+floors are `readonly COVERAGE_FLOOR=80` (lines) and `FUNCTION_COVERAGE_FLOOR=75` in the
+script and nothing else — no environment variable or flag moves either, so every change
+is a reviewed diff of this file, and only ever a raise. The function floor sits lower
+because llvm-cov counts compiler-generated closures (an `os.Logger` interpolation) as
+functions no test evaluates; the script's header records the value it was set against. The script rejects the environment override it used to read with
 `ERR_COVERAGE_OVERRIDE_REMOVED` before any test runs, rather than silently ignoring it;
 `scripts/tests/coverage_test.sh` holds that. Adding a new way to set the floor from a
 recipe, workflow, or hook is lowering it by another route.

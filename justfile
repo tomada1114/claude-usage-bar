@@ -50,7 +50,7 @@ test-scripts:
 check-harness:
     mise exec -- scripts/checks/run-all.sh
 
-# Run tests with the 80% line-coverage floor on MyAppCore
+# Run tests with the 80% line-coverage and 75% function-coverage floors on MyAppCore
 test:
     scripts/coverage.sh
 

@@ -45,7 +45,7 @@ paths:
 
 ## Gates
 
-- NEVER lower the coverage floor (currently 80% on MyAppCore)
+- NEVER lower a coverage floor (currently 80% of lines and 75% of functions on MyAppCore)
 - NEVER remove SwiftLint rules without explicit user approval
 
 ## Project Generation

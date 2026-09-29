@@ -19,7 +19,8 @@ distribution, macOS floor, and permissions — is recorded as ADRs under
 │ MyAppCore                                 (logic) │  models, view models, ports;
 │                                                   │  no UI/OS-framework import —
 │                                                   │  enforced by lint and test;
-│                                                   │  80% line-coverage floor
+│                                                   │  80% line-coverage floor,
+│                                                   │  75% function-coverage floor
 └───────────────────────────────────────────────────┘
 ```
 

@@ -11,7 +11,7 @@ Three kinds of test, split by what is under test:
 - **A decision → a Core test with a fake.** Anything that branches, clamps, formats, or
   remembers lives in `MyAppCore` and is tested in `Tests/MyAppCoreTests` against a fake
   of the port (see "Fakes, not mocks" below). These run in CI on every push and are what
-  the 80% line-coverage floor measures. This is the default: if an adapter looks like it
+  the 80% line- and 75% function-coverage floors measure. This is the default: if an adapter looks like it
   needs a test for a decision, move the decision into Core instead.
 - **Translation to or from the OS → a local-machine test.** Whether `NSWorkspace`, an
   event tap, or the accessibility API really answers what the adapter assumes can only
@@ -108,7 +108,7 @@ protocol, not over either implementation, and every clause it checks is one the 
 - **Boundary values**: values at, just inside, and just outside every bound
 - **Repeated operations**: idempotence at bounds (clamp twice, reset twice)
 - **State transitions**: initial state, after one operation, after error recovery
-- **Both branches** of every conditional in Core (the coverage floor measures lines, not branches, so it will not notice a missed one — write the test for each branch yourself)
+- **Both branches** of every conditional in Core (the coverage floors measure lines and functions, not branches, so they will not notice a missed one — write the test for each branch yourself)
 
 ## Hygiene
 

@@ -20,8 +20,8 @@ keeping a second copy that goes stale.
 This is a macOS SwiftUI app built from a strict template: XcodeGen generates the
 Xcode project from `project.yml`, all real code lives in a local Swift package
 (`Packages/MyAppKit`), and quality gates (SwiftLint strict, SwiftFormat, Swift 6
-language mode, an 80% line-coverage floor on the Core module) are enforced from
-day one.
+language mode, an 80% line-coverage and a 75% function-coverage floor on the Core
+module) are enforced from day one.
 
 ## Product
 
@@ -57,7 +57,7 @@ just lint      # Lint (scripts/lint.sh: swiftformat --lint + swiftlint --strict 
 just verify-hooks  # Verify the git hooks are installed and executable (scripts/verify-hooks.sh)
 just test-scripts  # Run the plain-bash tests for scripts/ and the skills' Python suites (scripts/tests/run.sh)
 just check-harness # Re-assert the harness's claims about itself (scripts/checks/run-all.sh)
-just test      # Run tests with the 80% coverage floor on MyAppCore
+just test      # Run tests with the 80% line / 75% function coverage floors on MyAppCore
 just test-fast CounterTests  # Run only the matching tests, no coverage floor (iteration only)
 just test-local    # Run the local-machine adapter tests (MyAppPlatformTests) CI cannot run
 just build     # Build the app (Debug)
@@ -120,7 +120,8 @@ Packages/MyAppKit/
 │                           #   code is reached through — platform-agnostic, no
 │                           #   SwiftUI/AppKit/UIKit/Cocoa/ApplicationServices/
 │                           #   Carbon/ServiceManagement import (enforced by lint
-│                           #   and test), coverage-gated at 80%
+│                           #   and test), coverage-gated at 80% of lines
+│                           #   and 75% of functions
 ├── Sources/MyAppUI/        # SwiftUI views — thin, delegate to Core view models
 ├── Sources/MyAppPlatform/  # OS-integration adapters behind Core ports (AppKit and
 │                           #   friends) — translation only, no domain logic, and
@@ -403,9 +404,11 @@ reasons behind them, with worked examples, are in the `writing-repo-scripts` ski
   `smoke_launch.sh`, and `package_dmg.sh` (need Xcode and a build; exercised by the
   `test`, `app`, and `release` jobs) — `coverage.sh` still has a partial test file,
   `scripts/tests/coverage_test.sh`, which stubs `swift` to cover its rejection of the
-  removed environment override and its floor comparison, but not a real coverage run.
+  removed environment override and its line- and function-floor comparisons, but not
+  a real coverage run.
   `bootstrap.sh` also predates the failure contract and does not follow it yet, and
-  neither does `coverage.sh`'s below-the-floor failure.
+  neither does `coverage.sh`'s below-the-line-floor failure (its function-floor
+  failure, `ERR_COVERAGE_FUNCTIONS_BELOW_FLOOR`, does).
 
 ## Enforcement layers
 

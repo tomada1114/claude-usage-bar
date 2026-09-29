@@ -113,7 +113,7 @@ scripts/release-prep.sh 0.2.0    # just release-prep 0.2.0 — version bump + ch
 
 - New logic lives in `MyAppCore` with Swift Testing coverage (happy + error path)
 - SwiftLint strict and SwiftFormat must pass with no warnings
-- Maintain or improve the 80% line-coverage floor on `MyAppCore`
+- Maintain or improve the 80% line-coverage and 75% function-coverage floors on `MyAppCore`
 - Public API carries `///` doc comments that explain *why*
 
 ### Commit Messages

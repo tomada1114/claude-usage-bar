@@ -57,11 +57,12 @@ isowords.
 a lint rule and a test both enforce it); `MyAppUI` holds thin
 views; `MyAppPlatform` holds the adapters that do talk to the OS, each behind a
 protocol Core declares, so a test can substitute a fake and `App/` decides which
-implementation the app gets (`docs/architecture.md`). The 80% line-coverage floor
-applies to Core only — that is what makes a
+implementation the app gets (`docs/architecture.md`). The 80% line-coverage and 75%
+function-coverage floors apply to Core only — that is what makes a
 strict numeric gate *honest* for a GUI app instead of an invitation to write
 meaningless view tests. Note: Swift's llvm-cov has no dependable branch
-metric, so the gate uses line coverage.
+metric, so the gate uses line coverage, plus function coverage so a Core function
+no test calls cannot hide under the line floor.
 
 ### Why Swift Testing?
 
