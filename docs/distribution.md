@@ -120,10 +120,18 @@ the user's consent.
 - **Hardened Runtime** — `ENABLE_HARDENED_RUNTIME: YES` in `project.yml` is a
   separate mechanism from the sandbox, and notarization requires it either way.
 - **Developer ID signing and notarization** — neither cares whether the app is
-  sandboxed. The release workflow signs whatever the entitlements file says
-  (`codesign --options runtime --entitlements App/MyApp.entitlements`).
-- **Every gate in this repository** — nothing in `just check`, `just smoke`, or
-  CI reads the entitlements file, so flipping the key changes no check.
+  sandboxed. Both signing paths in the release workflow carry whatever the
+  entitlements file says: with the Developer ID secrets it re-signs with
+  `codesign --options runtime --entitlements App/MyApp.entitlements`; without
+  them it keeps the ad-hoc signature `xcodebuild` already applied, which
+  `project.yml` builds from the same file (`CODE_SIGN_IDENTITY: "-"` and
+  `CODE_SIGN_ENTITLEMENTS` on the Release configuration). Either way the
+  workflow then runs `codesign -d --entitlements -` on the app and fails unless
+  it shows `com.apple.security.app-sandbox` — so turning the sandbox off also
+  means changing that release step.
+- **Every local and CI gate** — nothing in `just check`, `just smoke`, or CI
+  reads the entitlements file, so flipping the key changes no check there; only
+  the release workflow's entitlements step (above) notices.
 
 ### What it costs
 

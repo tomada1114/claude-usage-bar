@@ -422,6 +422,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The release workflow no longer strips `App/MyApp.entitlements` (and with it the App
+  Sandbox) from an ad-hoc-signed release: it keeps the signature `xcodebuild` applied
+  instead of re-signing without `--entitlements`, and a new step fails the release
+  unless `codesign -d --entitlements -` shows `com.apple.security.app-sandbox`.
+  `docs/distribution.md` now describes both signing paths.
 - `scripts/verify-hooks.sh` now skips only when git reports "not a git repository"
   (matched under `LC_ALL=C`); any other git failure, such as a malformed config,
   fails with `ERR_HOOKS_GIT_FAILED` instead of passing silently.
