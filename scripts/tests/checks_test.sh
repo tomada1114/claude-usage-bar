@@ -21,6 +21,7 @@ BT='`'
 # this file is tracked too, and the rename must not rewrite the fixture's copy of the
 # literal whose absence tells that check the rename has happened.
 PH_NAME='My''App'
+BOUNDARY_TESTS="Packages/MyAppKit/Tests/MyAppCoreTests/ArchitectureBoundaryTests.swift"
 
 if ! command -v just >/dev/null 2>&1; then
     echo "ERR_TESTS_TOOL_MISSING: 'just' is not on PATH" >&2
@@ -47,7 +48,13 @@ EOF
 # Prints the path of a fixture tree every check passes on. It deliberately holds
 # the near misses each check must not flag: a `just --list` and a `just <recipe>`
 # placeholder, `just` in prose outside backticks, a local `uses:`, a quoted pin,
-# a `### Rules` table after the Skills table, and a composite action.
+# a `### Rules` table after the Skills table, a composite action, a SwiftLint rule
+# after no_ui_import_in_core with a group of its own, a quoted module in a comment
+# inside forbiddenModules and in a second array, a CI step that reaches a recipe
+# through its script, CI-only recipes and a CI-only job, a label assigned to a shell
+# variable, a quoted label name with a trailing comment, a job-level `defaults: run:`
+# mapping, a Dependabot `labels:` list at its key's own indentation, and a Dependabot
+# entry with no `labels:` key (the implied `dependencies`).
 make_fixture() {
     local root
     root=$(make_temp_dir)
@@ -58,10 +65,25 @@ default:
 generate:
     echo generate
 
+verify-hooks:
+    scripts/verify-hooks.sh
+
+fmt:
+    echo fmt
+
+lint:
+    mise exec -- scripts/lint.sh
+
 build:
     echo build
 
-check: build
+uitest:
+    echo uitest
+
+smoke:
+    scripts/smoke_launch.sh
+
+check: verify-hooks fmt lint build
     echo check
 EOF
     cat >"${root}/AGENTS.md" <<'EOF'
@@ -144,6 +166,40 @@ jobs:
       - uses: ./.github/actions/setup
       - name: Upload
         uses: "github/codeql-action/upload-sarif@${SHA}" # v4.36.3
+      - name: Lint
+        run: scripts/lint.sh
+  app:
+    runs-on: macos-26
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - run: just build
+      - name: UI test and smoke
+        run: |
+          # just check leaves these two out
+          just uitest
+          scripts/smoke_launch.sh
+  bootstrap-smoke:
+    runs-on: macos-26
+    steps:
+      - run: swift test
+EOF
+    cat >"${root}/.github/workflows/label.yml" <<'EOF'
+name: Label
+on: pull_request
+permissions: {}
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          case "$TYPE" in
+            fix) label=bug ;;
+            ci) label="ci" ;;
+          esac
+          gh label create "$label" || true
+          gh pr edit 1 --add-label "$label"
 EOF
     cat >"${root}/.github/workflows/release.yml" <<EOF
 name: Release
@@ -180,7 +236,69 @@ runs:
   steps:
     - uses: actions/cache@${SHA} # v4.2.3
 EOF
+    # The next rule's `(print|debugPrint)\b` would join the Core ban list if the
+    # no_ui_import_in_core block did not end at it.
+    cat >"${root}/.swiftlint.yml" <<'EOF'
+strict: true
+custom_rules:
+  no_ui_import_in_core:
+    included: 'Packages/MyAppKit/Sources/MyAppCore/.+\.swift$'
+    regex: '^\s*(@[\w()]+\s+)*import\s+((typealias|struct|class)\s+)?(SwiftUI|AppKit|Carbon)\b'
+    severity: error
+
+  no_print_in_sources:
+    regex: '(print|debugPrint)\b'
+EOF
+    mkdir -p "$(dirname "${root}/${BOUNDARY_TESTS}")"
+    cat >"${root}/${BOUNDARY_TESTS}" <<'EOF'
+struct ArchitectureBoundaryTests {
+    /// Not "Foundation" — this comment is outside the literal.
+    static let forbiddenModules: [String] = [
+        "Carbon", "SwiftUI", // "Combine" stays allowed
+        "AppKit",
+    ]
+
+    static let otherModules = ["Combine"]
+}
+EOF
+    write_labels "${root}" bug enhancement "priority: P1" dependencies ci
+    mkdir -p "${root}/.github/ISSUE_TEMPLATE"
+    printf 'name: Bug\nlabels: ["bug", "priority: P1"]\nbody: []\n' >"${root}/.github/ISSUE_TEMPLATE/bug.yml"
+    printf 'name: Task\nlabels:\n  - enhancement\nbody:\n  - type: markdown\n' >"${root}/.github/ISSUE_TEMPLATE/task.yml"
+    printf 'blank_issues_enabled: false\n' >"${root}/.github/ISSUE_TEMPLATE/config.yml"
+    cat >"${root}/.github/dependabot.yml" <<'EOF'
+version: 2
+updates:
+  - package-ecosystem: "swift"
+    directory: "/"
+    groups:
+      all:
+        patterns: ["*"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    labels:
+    - "dependencies"
+    - ci
+EOF
+    cat >"${root}/.github/renovate.json" <<'EOF'
+{
+  "enabledManagers": ["mise"],
+  "labels": [
+    "dependencies"
+  ]
+}
+EOF
     echo "${root}"
+}
+
+# write_labels ROOT NAME... — a .github/labels.yml declaring exactly NAME..., in order.
+write_labels() {
+    local root="$1" name
+    shift
+    printf '# Fixture labels.\n' >"${root}/.github/labels.yml"
+    for name in "$@"; do
+        printf -- '- name: "%s" # a label\n  color: ededed\n  description: "The %s label."\n' "${name}" "${name}" >>"${root}/.github/labels.yml"
+    done
 }
 
 # rename_fixture_app ROOT — the one signal scripts/bootstrap.sh leaves behind that
@@ -228,7 +346,7 @@ case_run_all_passes() {
     root=$(make_fixture)
     capture "${BASH}" "${CHECKS}/run-all.sh" --root "${root}"
     assert_exit 0
-    assert_stdout_contains "harness checks: 7 check(s) passed"
+    assert_stdout_contains "harness checks: 10 check(s) passed"
 }
 
 case_run_all_reports_every_failure() {
@@ -241,7 +359,7 @@ case_run_all_reports_every_failure() {
     assert_exit 1
     assert_stderr_contains "ERR_CHECK_RECIPE_MISSING"
     assert_stderr_contains "ERR_CHECK_WORKFLOW_PERMISSIONS"
-    assert_stderr_contains "ERR_CHECKS_FAILED: 2 of 7 harness check(s) failed: just-recipes-exist.sh workflow-pins-and-permissions.sh"
+    assert_stderr_contains "ERR_CHECKS_FAILED: 2 of 10 harness check(s) failed: just-recipes-exist.sh workflow-pins-and-permissions.sh"
     assert_stderr_not_contains "skills-frontmatter.sh" "a passing check named as failed"
     assert_stderr_not_contains "skills-index-complete.sh" "a passing check named as failed"
     assert_stdout_contains "==> scripts/checks/skills-index-complete.sh"
@@ -806,6 +924,321 @@ case_contexts_missing_ruleset() {
     assert_contract ERR_CHECK_INPUT_MISSING
 }
 
+# --- core-ban-lists-agree.sh --------------------------------------------------
+
+# replace_in ROOT REL FROM TO — the first match of the basic regex FROM on each line
+# of ROOT/REL becomes TO (neither may contain a `#`).
+replace_in() {
+    sed "s#$3#$4#" "$1/$2" >"${CASE_DIR}/replaced"
+    mv "${CASE_DIR}/replaced" "$1/$2"
+}
+
+case_ban_pass() {
+    local root
+    root=$(make_fixture)
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "core-ban-lists-agree: .swiftlint.yml and ArchitectureBoundaryTests ban the same modules."
+}
+
+case_ban_pass_single_line_literal() {
+    local root
+    root=$(make_fixture)
+    printf 'enum T {\n    static let forbiddenModules = ["AppKit", "SwiftUI", "Carbon", "AppKit"]\n}\n' >"${root}/${BOUNDARY_TESTS}"
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_ban_lint_has_extra() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .swiftlint.yml "|Carbon)" "|Carbon|UIKit)"
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_CORE_BAN_DIVERGED
+    assert_stderr_contains "\`UIKit\` is banned by .swiftlint.yml's no_ui_import_in_core but missing from forbiddenModules"
+    assert_stderr_not_contains "\`Carbon\`" "a module in both lists reported"
+}
+
+case_ban_tests_have_extra() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" "${BOUNDARY_TESTS}" '"AppKit",' '"AppKit", "ServiceManagement",'
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_CORE_BAN_DIVERGED
+    assert_stderr_contains "\`ServiceManagement\` is in forbiddenModules in ${BOUNDARY_TESTS} but missing from .swiftlint.yml's no_ui_import_in_core regex"
+    assert_stderr_not_contains "\`Combine\`" "a module outside forbiddenModules read as banned"
+}
+
+case_ban_lint_list_unparsed() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .swiftlint.yml "no_ui_import_in_core:" "no_ui_import:"
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_CORE_BAN_UNPARSED
+    assert_stderr_contains ".swiftlint.yml: no module alternation"
+    assert_stderr_not_contains "ERR_CHECK_CORE_BAN_DIVERGED" "an unreadable list compared as empty"
+}
+
+case_ban_tests_list_unparsed() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" "${BOUNDARY_TESTS}" "forbiddenModules" "bannedModules"
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_CORE_BAN_UNPARSED
+    assert_stderr_contains "${BOUNDARY_TESTS}: no string literal"
+}
+
+case_ban_missing_tests_file() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/${BOUNDARY_TESTS}" "${CASE_DIR}/moved.swift"
+    capture "${BASH}" "${CHECKS}/core-ban-lists-agree.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_INPUT_MISSING
+}
+
+# --- just-check-matches-ci.sh -------------------------------------------------
+
+# append_ci_step ROOT RUN — appends a `run:` step to the fixture ci.yml's lint job.
+append_ci_step() {
+    awk -v run="$2" '{ print } /^        run: scripts\/lint.sh$/ { print "      - run: " run }' \
+        "$1/.github/workflows/ci.yml" >"${CASE_DIR}/ci.yml"
+    mv "${CASE_DIR}/ci.yml" "$1/.github/workflows/ci.yml"
+}
+
+case_ci_pass() {
+    local root
+    root=$(make_fixture)
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "just-check-matches-ci: "
+}
+
+case_ci_gate_missing_from_ci() {
+    local root
+    root=$(make_fixture)
+    printf '\ntest:\n    scripts/coverage.sh\n' >>"${root}/justfile"
+    replace_in "${root}" justfile "^check: verify-hooks fmt lint build" "check: verify-hooks fmt lint test build"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_DIVERGED
+    assert_stderr_contains "\`just check\` runs \`just test\`, but no .github/workflows/ci.yml step runs it"
+    assert_stderr_not_contains "\`just lint\`" "a gate CI reaches through its script reported"
+}
+
+case_ci_recipe_missing_from_check() {
+    local root
+    root=$(make_fixture)
+    append_ci_step "${root}" "just generate"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_DIVERGED
+    assert_stderr_contains ".github/workflows/ci.yml:$(grep -n 'run: just generate' "${root}/.github/workflows/ci.yml" | cut -d: -f1): job \`lint\` runs \`just generate\`"
+    assert_stderr_not_contains "\`just uitest\`" "a CI_ONLY recipe reported"
+}
+
+case_ci_script_no_recipe_calls() {
+    local root
+    root=$(make_fixture)
+    append_ci_step "${root}" "scripts/other.sh --flag"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_DIVERGED
+    assert_stderr_contains "runs scripts/other.sh, which no justfile recipe calls"
+}
+
+case_ci_step_runs_nothing_shared() {
+    local root
+    root=$(make_fixture)
+    append_ci_step "${root}" "swift build"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_DIVERGED
+    assert_stderr_contains "job \`lint\` runs a step that calls no \`just\` recipe and no repository script: swift build"
+    assert_stderr_not_contains "swift test" "a step in a CI_ONLY_JOBS job reported"
+}
+
+case_ci_stale_local_only() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" justfile "^check: verify-hooks fmt lint build" "check: verify-hooks lint build"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_STALE
+    assert_stderr_contains "LOCAL_ONLY names \`fmt\`, which \`just check\` no longer runs"
+}
+
+case_ci_stale_ci_only() {
+    local root
+    root=$(make_fixture)
+    sed '/^          just uitest$/d' "${root}/.github/workflows/ci.yml" >"${CASE_DIR}/ci.yml"
+    mv "${CASE_DIR}/ci.yml" "${root}/.github/workflows/ci.yml"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_STALE
+    assert_stderr_contains "CI_ONLY names \`uitest\`, which no .github/workflows/ci.yml step runs any more"
+    assert_stderr_not_contains "\`smoke\`" "a CI_ONLY recipe still run by a block step reported"
+}
+
+case_ci_no_check_recipe() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" justfile "^check: verify-hooks fmt lint build" "all: verify-hooks fmt lint build"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_JUST_CI_NO_CHECK
+}
+
+case_ci_missing_workflow() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/workflows/ci.yml" "${CASE_DIR}/ci.yml"
+    capture "${BASH}" "${CHECKS}/just-check-matches-ci.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_INPUT_MISSING
+}
+
+# --- labels-declared.sh -------------------------------------------------------
+
+case_labels_pass() {
+    local root
+    root=$(make_fixture)
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 0
+    assert_stdout_contains "labels-declared: every applied label is declared once"
+}
+
+case_labels_duplicate() {
+    local root
+    root=$(make_fixture)
+    write_labels "${root}" bug enhancement "priority: P1" dependencies ci bug
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_DUPLICATE
+    assert_stderr_contains ".github/labels.yml:17: \`bug\` is already declared at line 2"
+    assert_stderr_not_contains "ERR_CHECK_LABEL_UNDECLARED" "a declared label reported as undeclared"
+}
+
+case_labels_duplicate_differs_in_case() {
+    local root
+    root=$(make_fixture)
+    write_labels "${root}" bug enhancement "priority: P1" dependencies ci "Priority: p1"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_DUPLICATE
+    assert_stderr_contains "\`Priority: p1\` is already declared at line 8"
+}
+
+case_labels_issue_form_flow() {
+    local root
+    root=$(make_fixture)
+    printf 'name: Bug\nlabels: [bug, "needs triage"]\n' >"${root}/.github/ISSUE_TEMPLATE/bug.yml"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/ISSUE_TEMPLATE/bug.yml:2: applies \`needs triage\`"
+    assert_stderr_not_contains "\`bug\`" "a declared label reported"
+}
+
+case_labels_issue_form_block_list() {
+    local root
+    root=$(make_fixture)
+    printf 'name: Task\nlabels:\n  - enhancement\n  - "question"\nbody: []\n' >"${root}/.github/ISSUE_TEMPLATE/task.yml"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/ISSUE_TEMPLATE/task.yml:4: applies \`question\`"
+}
+
+case_labels_issue_form_comma_string() {
+    local root
+    root=$(make_fixture)
+    printf 'name: Task\nlabels: enhancement, wontfix\n' >"${root}/.github/ISSUE_TEMPLATE/task.yml"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/ISSUE_TEMPLATE/task.yml:2: applies \`wontfix\`"
+}
+
+case_labels_workflow_add_label() {
+    local root
+    root=$(make_fixture)
+    echo '          gh issue edit 2 --add-label "stale,ci" --label=triaged' >>"${root}/.github/workflows/label.yml"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/workflows/label.yml:15: applies \`stale\`"
+    assert_stderr_contains ".github/workflows/label.yml:15: applies \`triaged\`"
+    assert_stderr_not_contains "\`ci\`" "a declared label in a comma list reported"
+    assert_stderr_not_contains "\`\$label\`" "a variable read as a label"
+}
+
+case_labels_workflow_assignment() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/workflows/label.yml 'label="ci"' "LABEL='infra'"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/workflows/label.yml:11: applies \`infra\`"
+}
+
+case_labels_dependabot_explicit() {
+    local root
+    root=$(make_fixture)
+    replace_in "${root}" .github/dependabot.yml "^    - ci$" "    - github-actions"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/dependabot.yml:$(grep -n -- '- github-actions' "${root}/.github/dependabot.yml" | cut -d: -f1): applies \`github-actions\`"
+    assert_stderr_not_contains "Dependabot default" "an entry with a labels: key given the default"
+}
+
+case_labels_dependabot_default() {
+    local root
+    root=$(make_fixture)
+    write_labels "${root}" bug enhancement "priority: P1" ci
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains ".github/dependabot.yml:3: applies \`dependencies\` (Dependabot default, no labels: key)"
+    assert_stderr_contains ".github/renovate.json:4: applies \`dependencies\`"
+    assert_stderr_not_contains "\`swift\`" "the ecosystem label Dependabot creates itself required"
+}
+
+case_labels_dependabot_empty_list() {
+    local root
+    root=$(make_fixture)
+    write_labels "${root}" bug enhancement "priority: P1" ci
+    printf 'version: 2\nupdates:\n  - package-ecosystem: "swift"\n    labels: []\n' >"${root}/.github/dependabot.yml"
+    mv "${root}/.github/renovate.json" "${CASE_DIR}/renovate.json"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 0
+}
+
+case_labels_renovate() {
+    local root
+    root=$(make_fixture)
+    printf '{\n  "packageRules": [{ "addLabels": ["tooling"] }]\n}\n' >"${root}/renovate.json"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_LABEL_UNDECLARED
+    assert_stderr_contains "renovate.json:2: applies \`tooling\`"
+}
+
+case_labels_missing_file() {
+    local root
+    root=$(make_fixture)
+    mv "${root}/.github/labels.yml" "${CASE_DIR}/labels.yml"
+    capture "${BASH}" "${CHECKS}/labels-declared.sh" --root "${root}"
+    assert_exit 1
+    assert_contract ERR_CHECK_INPUT_MISSING
+}
+
 run_case "run-all: passes on a conforming tree" case_run_all_passes
 run_case "run-all: two broken checks are both reported" case_run_all_reports_every_failure
 run_case "run-all: rejects an unknown argument" case_run_all_rejects_unknown_argument
@@ -857,4 +1290,33 @@ run_case "contexts: a context matching no job fails" case_contexts_missing_job
 run_case "contexts: a job only in a push workflow does not count" case_contexts_push_only_workflow
 run_case "contexts: a pull_request_target workflow does not count" case_contexts_pull_request_target_does_not_count
 run_case "contexts: a missing main.json fails" case_contexts_missing_ruleset
+run_case "ban: passes, ignoring a later rule's group and quoted modules in comments" case_ban_pass
+run_case "ban: passes on a one-line literal with a repeated module" case_ban_pass_single_line_literal
+run_case "ban: a module only in the lint rule fails" case_ban_lint_has_extra
+run_case "ban: a module only in forbiddenModules fails" case_ban_tests_have_extra
+run_case "ban: an unreadable lint list fails" case_ban_lint_list_unparsed
+run_case "ban: an unreadable forbiddenModules fails" case_ban_tests_list_unparsed
+run_case "ban: a missing ArchitectureBoundaryTests.swift fails" case_ban_missing_tests_file
+run_case "ci: passes, with scripts, a block step, and the exceptions" case_ci_pass
+run_case "ci: a just check gate no CI step runs fails" case_ci_gate_missing_from_ci
+run_case "ci: a CI recipe just check does not run fails" case_ci_recipe_missing_from_check
+run_case "ci: a CI script no recipe calls fails" case_ci_script_no_recipe_calls
+run_case "ci: a CI step running no recipe or script fails" case_ci_step_runs_nothing_shared
+run_case "ci: a stale LOCAL_ONLY exception fails" case_ci_stale_local_only
+run_case "ci: a stale CI_ONLY exception fails" case_ci_stale_ci_only
+run_case "ci: no check recipe fails" case_ci_no_check_recipe
+run_case "ci: a missing ci.yml fails" case_ci_missing_workflow
+run_case "labels: passes on a conforming tree" case_labels_pass
+run_case "labels: a label declared twice fails" case_labels_duplicate
+run_case "labels: two names differing only in case fail" case_labels_duplicate_differs_in_case
+run_case "labels: an undeclared label in an issue form flow list fails" case_labels_issue_form_flow
+run_case "labels: an undeclared label in an issue form block list fails" case_labels_issue_form_block_list
+run_case "labels: an undeclared label in an issue form comma string fails" case_labels_issue_form_comma_string
+run_case "labels: an undeclared --add-label/--label value fails" case_labels_workflow_add_label
+run_case "labels: an undeclared label assigned in a workflow fails" case_labels_workflow_assignment
+run_case "labels: an undeclared Dependabot label fails" case_labels_dependabot_explicit
+run_case "labels: Dependabot's implied dependencies label must be declared" case_labels_dependabot_default
+run_case "labels: an empty Dependabot labels list implies nothing" case_labels_dependabot_empty_list
+run_case "labels: an undeclared Renovate addLabels value fails" case_labels_renovate
+run_case "labels: a missing labels.yml fails" case_labels_missing_file
 finish

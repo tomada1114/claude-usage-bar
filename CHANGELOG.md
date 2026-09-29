@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Three harness checks, run by `just check-harness`, for lists that were kept in sync
+  by hand: `scripts/checks/core-ban-lists-agree.sh` fails when `.swiftlint.yml`'s
+  `no_ui_import_in_core` regex and `ArchitectureBoundaryTests.forbiddenModules` ban
+  different modules; `scripts/checks/just-check-matches-ci.sh` fails when a
+  `just check` gate is not run by `.github/workflows/ci.yml` or a CI `run:` step runs
+  something `just check` does not, apart from a reasoned exception list in the script
+  (`verify-hooks` and `fmt` local-only; `uitest`, `smoke`, and the `bootstrap-smoke`
+  job CI-only); and `scripts/checks/labels-declared.sh` fails when an issue form, a
+  workflow, Dependabot (including its implied `dependencies` label), or Renovate
+  applies a label `.github/labels.yml` does not declare, or when labels.yml declares a
+  label twice.
 - A `steering-the-roadmap` skill and a `docs/architecture/roadmap.md` skeleton, linked
   from the ADR index but not an ADR: the app's direction as Now / Next / Later outcomes
   with no dates, filled in after `AGENTS.md`'s `## Product`. The skill says who changes
