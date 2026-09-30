@@ -60,10 +60,12 @@ test:
 test-fast filter:
     cd Packages/ClaudeUsageBarKit && swift test --filter '{{filter}}'
 
-# Build the app (Debug)
+# Build the app (Debug). 2>&1 keeps stderr off the terminal: there, swiftc passes
+# -fmessage-length=<width>, which splits the module cache per terminal width (#4)
+[doc("Build the app (Debug)")]
 build:
     mise exec -- xcodegen generate
-    set -o pipefail && xcodebuild -project ClaudeUsageBar.xcodeproj -scheme ClaudeUsageBar -configuration Debug -derivedDataPath build/dev-derived-data build | mise exec -- xcbeautify --quiet
+    set -o pipefail && xcodebuild -project ClaudeUsageBar.xcodeproj -scheme ClaudeUsageBar -configuration Debug -derivedDataPath build/dev-derived-data build 2>&1 | mise exec -- xcbeautify --quiet
 
 # Build (Debug), quit any running instance of this app, and launch the fresh
 # build, left running until you quit it (scripts/run-app.sh)
@@ -84,11 +86,13 @@ reset-permissions:
 logs:
     bundle_id="$(scripts/bundle-id.sh)" && log stream --predicate "subsystem == \"${bundle_id}\"" --level debug
 
-# Run the XCUITest launch test (may prompt for Accessibility permission on first local run)
+# Run the XCUITest launch test (may prompt for Accessibility permission on first
+# local run). 2>&1 keeps the terminal width out of the module cache, as in `build`
+[doc("Run the XCUITest launch test (may prompt for Accessibility permission on first local run)")]
 uitest:
     mise exec -- xcodegen generate
     rm -rf build/LaunchUITests.xcresult
-    set -o pipefail && xcodebuild test -project ClaudeUsageBar.xcodeproj -scheme ClaudeUsageBar -destination 'platform=macOS' -derivedDataPath build/dev-derived-data -resultBundlePath build/LaunchUITests.xcresult | mise exec -- xcbeautify
+    set -o pipefail && xcodebuild test -project ClaudeUsageBar.xcodeproj -scheme ClaudeUsageBar -destination 'platform=macOS' -derivedDataPath build/dev-derived-data -resultBundlePath build/LaunchUITests.xcresult 2>&1 | mise exec -- xcbeautify
 
 # Build Release and assert the app launches and stays alive
 smoke:
