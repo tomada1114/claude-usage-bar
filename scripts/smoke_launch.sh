@@ -27,12 +27,14 @@ if [ -z "${APP_BUNDLE:-}" ]; then
     mise exec -- xcodegen generate
 
     echo "==> Building ${APP_NAME} (Release)"
+    # 2>&1: with stderr on a terminal, swiftc passes -fmessage-length=<width>, which
+    # splits the module cache into one variant per terminal width (#4)
     xcodebuild \
         -project "${APP_NAME}.xcodeproj" \
         -scheme "${APP_NAME}" \
         -configuration Release \
         -derivedDataPath "${DERIVED_DATA}" \
-        build | mise exec -- xcbeautify --quiet
+        build 2>&1 | mise exec -- xcbeautify --quiet
 
     APP_BUNDLE="${DERIVED_DATA}/Build/Products/Release/${APP_NAME}.app"
 fi
