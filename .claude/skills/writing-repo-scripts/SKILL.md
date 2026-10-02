@@ -43,6 +43,14 @@ it does not restate them, so the two cannot drift apart.
   every file with `bash -n` before starting it for exactly this reason, and counts a
   file that does not parse as that file failing. Write a multi-line stub body as one
   single-quoted literal instead (`scripts/tests/apply-ruleset_test.sh`).
+- `pipefail` turns a reader that stops early into an intermittent failure of the whole
+  pipeline. In `printf '%s\n' "${list}" | grep -qxF -- "${name}"`, `grep -q` exits at
+  its first match, the writer can then hit a closed pipe (`printf: write error: Broken
+  pipe`), and the pipeline reports failure for a line that *was* there — which is how
+  `labels-declared.sh` once failed CI on an unchanged tree. Feed a variable to a reader
+  with a here-string instead, `grep -qxF -- "${name}" <<<"${list}"`, which has no
+  writer to kill; the same goes for `head`, `grep -m`, or any reader that exits before
+  its input ends.
 - Pinned tools (`swiftlint`, `shellcheck`, `just`, …) arrive through the caller's PATH:
   `mise exec -- …` in a `just` recipe, `jdx/mise-action` in CI. A script never calls
   `mise exec` itself, because CI's `lint` job installs only a subset of `mise.toml`

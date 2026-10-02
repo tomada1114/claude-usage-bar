@@ -215,7 +215,7 @@ done
 DECLARED_NAMES=$(printf '%s\n' "${DECLARED}" | cut -f 2)
 while IFS="$(printf '\t')" read -r where label note; do
     [ -n "${label}" ] || continue
-    if ! printf '%s\n' "${DECLARED_NAMES}" | grep -qxF -- "${label}"; then
+    if ! grep -qxF -- "${label}" <<<"${DECLARED_NAMES}"; then
         check_problem "${where}: applies \`${label}\`${note:+ ${note}}, which ${LABELS} does not declare"
     fi
 done <<EOF

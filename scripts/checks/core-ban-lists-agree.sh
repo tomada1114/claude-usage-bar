@@ -90,7 +90,7 @@ check_report ERR_CHECK_CORE_BAN_UNPARSED "a Core import ban list could not be re
 if [ -n "${LINT_MODULES}" ] && [ -n "${TEST_MODULES}" ]; then
     while IFS= read -r module; do
         [ -n "${module}" ] || continue
-        if ! printf '%s\n' "${TEST_MODULES}" | grep -qxF -- "${module}"; then
+        if ! grep -qxF -- "${module}" <<<"${TEST_MODULES}"; then
             check_problem "\`${module}\` is banned by ${LINT}'s no_ui_import_in_core but missing from forbiddenModules in ${TESTS}"
         fi
     done <<EOF
@@ -98,7 +98,7 @@ ${LINT_MODULES}
 EOF
     while IFS= read -r module; do
         [ -n "${module}" ] || continue
-        if ! printf '%s\n' "${LINT_MODULES}" | grep -qxF -- "${module}"; then
+        if ! grep -qxF -- "${module}" <<<"${LINT_MODULES}"; then
             check_problem "\`${module}\` is in forbiddenModules in ${TESTS} but missing from ${LINT}'s no_ui_import_in_core regex"
         fi
     done <<EOF

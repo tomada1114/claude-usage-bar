@@ -86,7 +86,7 @@ args=(--add-label "${label}")
 for existing in ${TYPE_LABELS}; do
     [ "${existing}" != "${label}" ] || continue
     [ "${existing}" != dependencies ] || continue
-    if printf '%s\n' "${current}" | grep -qxF -- "${existing}"; then
+    if grep -qxF -- "${existing}" <<<"${current}"; then
         args+=(--remove-label "${existing}")
     fi
 done

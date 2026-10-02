@@ -60,10 +60,10 @@ for file in ${WORKFLOWS[@]+"${WORKFLOWS[@]}"} ${ACTIONS[@]+"${ACTIONS[@]}"}; do
         [ -n "${hit}" ] || continue
         line="${hit%%:*}"
         text="${hit#*:}"
-        if printf '%s\n' "${text}" | grep -qE "${LOCAL}"; then
+        if grep -qE "${LOCAL}" <<<"${text}"; then
             continue
         fi
-        if ! printf '%s\n' "${text}" | grep -qE "${PINNED}"; then
+        if ! grep -qE "${PINNED}" <<<"${text}"; then
             ref=$(printf '%s\n' "${text}" | sed -E 's/^[[:space:]]*(-[[:space:]]+)?uses:[[:space:]]*//')
             check_problem "${file#"${CHECK_ROOT}"/}:${line}: ${ref}"
         fi
