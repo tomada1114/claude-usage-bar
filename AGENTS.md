@@ -32,7 +32,7 @@ module) are enforced from day one.
   endpoint Claude Code itself calls, so it needs no sign-in or setup of its own.
 - **The core interaction** — glancing at the menu bar: the rounded weekly percentage,
   a bare number such as `76` in a thin outlined monochrome badge, legible at menu bar
-  text size and kept current every two minutes. Clicking it opens a native menu with the
+  text size and kept current every minute. Clicking it opens a native menu with the
   weekly and five-hour percentages, when each resets, why the last refresh failed (if it
   did, beside the last good numbers), when the numbers arrived, and Quit.
 - **Non-goals** — no colors, thresholds, or warning states on the badge; no

@@ -54,7 +54,7 @@ Option 1.
 - **No token refresh.** The app never uses the refresh token. A 401 or 403 shows
   "Sign-in expired — open Claude Code to refresh it"; running Claude Code renews the
   token, and the next poll succeeds.
-- **Polling.** At launch and then every `Tuning.refreshInterval` (two minutes), with a
+- **Polling.** At launch and then every `Tuning.refreshInterval` (one minute), with a
   30-second `Tuning.requestTimeout`. A failure keeps the last good numbers on screen beside
   one line naming the failure.
 - **Ports.** `OAuthTokenProviding` and `UsageFetching` in Core, each with a fake and a
@@ -84,7 +84,7 @@ stored credential for numbers Claude Code already has.
 - Running a subprocess requires the sandbox posture in [ADR-0002](0002-sandbox-posture.md).
 - The app depends on the keychain item's name and JSON layout, which belong to Claude
   Code and can also change.
-- About 720 requests a day while the app runs.
+- About 1,440 requests a day while the app runs.
 
 ### Follow-ups
 
@@ -92,7 +92,7 @@ stored credential for numbers Claude Code already has.
 
 ## Open questions
 
-- Unverified: whether Anthropic rate-limits this endpoint per token in a way two-minute
+- Unverified: whether Anthropic rate-limits this endpoint per token in a way one-minute
   polling alongside Claude Code's own calls could hit.
 - Unverified: why `/usr/bin/security` reads the item without a prompt — the item's access
   list was not inspected, only the behavior observed.

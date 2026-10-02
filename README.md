@@ -21,7 +21,7 @@ Quit ClaudeUsageBar   ⌘Q
 
 The number sits inside the outline of Clawd, Claude Code's pixel mascot, which follows
 the menu bar's light, dark, and tinted appearance; it reads `--` until the first refresh
-succeeds. The app refreshes at launch and every two minutes. When a refresh fails, the
+succeeds. The app refreshes at launch and every minute. When a refresh fails, the
 menu keeps the last good numbers and adds one line saying why: not signed in to Claude
 Code, sign-in expired (open Claude Code to renew it), the server could not be reached,
 or it answered with something unexpected.

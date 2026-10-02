@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   until the first refresh)
 - A menu with the weekly and five-hour usage, their local reset times, the time of the
   last update, a line naming why the last refresh failed, and Quit (⌘Q)
-- Refresh at launch and every two minutes, reading Claude Code's OAuth token from the
+- Refresh at launch and every minute, reading Claude Code's OAuth token from the
   login keychain with `/usr/bin/security` and querying Anthropic's undocumented OAuth
   usage endpoint
 
