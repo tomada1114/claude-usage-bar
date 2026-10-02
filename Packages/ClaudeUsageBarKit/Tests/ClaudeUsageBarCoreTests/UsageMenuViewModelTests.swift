@@ -199,7 +199,7 @@ struct UsageMenuViewModelTests {
         let model = Self.model(harness, clock: clock)
         await model.run()
         #expect(harness.fetcher.callCount == 3)
-        #expect(clock.sleeps == [.seconds(120), .seconds(120), .seconds(120)])
+        #expect(clock.sleeps == [.seconds(60), .seconds(60), .seconds(60)])
     }
 
     @Test
