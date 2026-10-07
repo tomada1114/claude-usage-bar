@@ -12,6 +12,28 @@
         }
       }
     },
+    "badge.accessibility.fiveHour" : {
+      "comment" : "VoiceOver label for the menu bar item. The argument is the five-hour usage, a whole percentage.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude 5-hour usage %lld percent"
+          }
+        }
+      }
+    },
+    "badge.accessibility.fiveHour.unavailable" : {
+      "comment" : "VoiceOver label for the menu bar item when the five-hour usage is not known yet.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Claude 5-hour usage unavailable"
+          }
+        }
+      }
+    },
     "badge.accessibility.unavailable" : {
       "comment" : "VoiceOver label for the menu bar item when the weekly usage is not known yet.",
       "localizations" : {
@@ -74,6 +96,39 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Couldn’t reach the usage server"
+          }
+        }
+      }
+    },
+    "menu.badgeWindow.fiveHour" : {
+      "comment" : "Menu item that makes the menu bar show the five-hour usage limit.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "5-hour"
+          }
+        }
+      }
+    },
+    "menu.badgeWindow.heading" : {
+      "comment" : "Menu heading above the choice of which usage window the menu bar shows.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in Menu Bar"
+          }
+        }
+      }
+    },
+    "menu.badgeWindow.weekly" : {
+      "comment" : "Menu item that makes the menu bar show the weekly usage limit.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weekly"
           }
         }
       }

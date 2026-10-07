@@ -30,15 +30,17 @@ module) are enforced from day one.
   much of the weekly usage limit is left before it runs out mid-task. It reads the
   OAuth token Claude Code already keeps in the login keychain and polls the usage
   endpoint Claude Code itself calls, so it needs no sign-in or setup of its own.
-- **The core interaction** — glancing at the menu bar: the rounded weekly percentage,
-  a bare number such as `76` in a thin outlined monochrome badge, legible at menu bar
-  text size and kept current every minute. Clicking it opens a native menu with the
-  weekly and five-hour percentages, when each resets, why the last refresh failed (if it
+- **The core interaction** — glancing at the menu bar: the rounded weekly percentage
+  (or the five-hour one, when chosen in the menu), a bare number such as `76` in a thin
+  outlined monochrome badge, legible at menu bar text size and kept current every
+  minute. Clicking it opens a native menu with the weekly and five-hour percentages,
+  when each resets, which of the two the badge shows, why the last refresh failed (if it
   did, beside the last good numbers), when the numbers arrived, and Quit.
 - **Non-goals** — no colors, thresholds, or warning states on the badge; no
   notifications; no limits beyond the weekly and five-hour windows (no per-model, Opus,
   or other breakdowns the endpoint reports); no manual refresh item; no token refresh —
-  an expired token is fixed by running Claude Code; no settings; no history or charts;
+  an expired token is fixed by running Claude Code; no settings window and no saved
+  preferences — the badge's weekly/five-hour choice resets to weekly at launch; no history or charts;
   no Windows or Linux build; no Mac App Store release. Moving any of these into scope is
   the owner's decision.
 - **Where these decisions are recorded** — the ADRs under `docs/architecture/adr/`:

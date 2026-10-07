@@ -31,9 +31,12 @@ public final class UsageMenuViewModel {
     /// The numbers, the last failure, and when the numbers arrived.
     public private(set) var state = UsageState()
 
+    /// The window the badge shows; ``BadgeWindow/weekly`` at every launch.
+    public private(set) var badgeWindow = BadgeWindow.weekly
+
     /// ``state`` as the badge and the menu render it.
     public var presentation: UsagePresentation {
-        UsagePresentation(state: state, formatter: formatter)
+        UsagePresentation(state: state, formatter: formatter, badgeWindow: badgeWindow)
     }
 
     private let ports: Ports
@@ -109,6 +112,11 @@ public final class UsageMenuViewModel {
     public func stopPolling() {
         polling?.cancel()
         polling = nil
+    }
+
+    /// Makes the badge show `window` — the menu's badge window choice.
+    public func showInMenuBar(_ window: BadgeWindow) {
+        badgeWindow = window
     }
 
     /// Quits the app — the menu's last item.

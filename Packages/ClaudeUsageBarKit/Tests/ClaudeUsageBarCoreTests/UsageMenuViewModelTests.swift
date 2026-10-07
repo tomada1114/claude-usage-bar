@@ -267,4 +267,18 @@ struct UsageMenuViewModelTests {
         await model.refresh()
         #expect(model.presentation.badgeText == "76")
     }
+
+    // MARK: - Badge window
+
+    @Test
+    func `the badge shows the weekly window until another is chosen`() async {
+        let model = Self.model(Self.harness())
+        #expect(model.badgeWindow == .weekly)
+        await model.refresh()
+        model.showInMenuBar(.fiveHour)
+        #expect(model.badgeWindow == .fiveHour)
+        #expect(model.presentation.badgeText == "19")
+        model.showInMenuBar(.weekly)
+        #expect(model.presentation.badgeText == "76")
+    }
 }

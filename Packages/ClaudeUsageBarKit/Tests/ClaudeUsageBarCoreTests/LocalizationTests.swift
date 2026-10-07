@@ -69,7 +69,32 @@ struct LocalizationTests {
     /// arguments its English takes. Adding a key to Core means adding it here: the
     /// source-scan tests fail until this list names every key Core's sources declare.
     static func everyCase() -> [Case] {
-        usageCases()
+        usageCases() + badgeWindowCases()
+    }
+
+    /// The five-hour badge's resources, and the menu's badge window choice.
+    static func badgeWindowCases() -> [Case] {
+        let snapshot = UsageSnapshot(
+            fiveHour: UsageWindow(utilization: 19, resetsAt: nil),
+            sevenDay: nil,
+        )
+        let known = UsagePresentation(
+            state: UsageState(snapshot: snapshot),
+            formatter: UsageFormatter(),
+            badgeWindow: .fiveHour,
+        )
+        let unknown = UsagePresentation(
+            state: UsageState(),
+            formatter: UsageFormatter(),
+            badgeWindow: .fiveHour,
+        )
+        return [
+            Case(resource: known.badgeAccessibilityLabel, arguments: [19]),
+            Case(resource: unknown.badgeAccessibilityLabel, arguments: []),
+            Case(resource: UsagePresentation.badgeWindowHeading, arguments: []),
+            Case(resource: UsagePresentation.title(for: .weekly), arguments: []),
+            Case(resource: UsagePresentation.title(for: .fiveHour), arguments: []),
+        ]
     }
 
     /// The usage menu's resources: one presentation with numbers, one without, and one

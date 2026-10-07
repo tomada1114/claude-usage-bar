@@ -30,7 +30,7 @@ public struct UsageWindow: Equatable, Sendable {
 public struct UsageSnapshot: Equatable, Sendable {
     /// The rolling five-hour window (`five_hour`).
     public let fiveHour: UsageWindow?
-    /// The weekly window (`seven_day`) — the number in the menu bar.
+    /// The weekly window (`seven_day`) — the menu bar's number by default.
     public let sevenDay: UsageWindow?
 
     public init(fiveHour: UsageWindow?, sevenDay: UsageWindow?) {
