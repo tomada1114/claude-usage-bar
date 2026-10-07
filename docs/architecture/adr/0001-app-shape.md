@@ -40,7 +40,8 @@ because an agent app has no app menu and therefore no built-in way to quit.
 
 Option 1. `INFOPLIST_KEY_LSUIElement: YES` in `project.yml`; `App/` declares one
 `MenuBarExtra` whose label is `UsageBadgeLabel` and whose content is `UsageMenu`, with
-`.menuBarExtraStyle(.menu)`. The badge is the rounded weekly percentage inside a thin
+`.menuBarExtraStyle(.menu)`. The badge is the rounded weekly percentage — or the five-hour one, chosen
+from the menu for the current run — inside a thin
 outline of Clawd, Claude Code's pixel mascot, rendered into a template image so the menu
 bar tints it for light, dark, and highlighted states. Quit goes through the
 `ApplicationTerminating` port, answered by `NSApplicationTerminator` in

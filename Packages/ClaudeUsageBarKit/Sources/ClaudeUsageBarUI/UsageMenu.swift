@@ -5,6 +5,7 @@ import SwiftUI
 /// becomes a disabled menu item and each `Divider` a separator.
 struct UsageMenuItems: View {
     let presentation: UsagePresentation
+    let showInMenuBar: (BadgeWindow) -> Void
     let quit: () -> Void
 
     var body: some View {
@@ -16,6 +17,15 @@ struct UsageMenuItems: View {
         Text(presentation.fiveHourUsage)
         if let fiveHourReset = presentation.fiveHourReset {
             Text(fiveHourReset)
+        }
+        Divider()
+        Text(UsagePresentation.badgeWindowHeading)
+        ForEach(BadgeWindow.menuOrder, id: \.self) { window in
+            // A menu renders a Toggle as an item with a checkmark when on.
+            Toggle(UsagePresentation.title(for: window), isOn: Binding(
+                get: { presentation.badgeWindow == window },
+                set: { _ in showInMenuBar(window) },
+            ))
         }
         Divider()
         if let failure = presentation.failure {
@@ -56,7 +66,9 @@ private enum PreviewState {
             UsageMenuItems(presentation: UsagePresentation(
                 state: state,
                 formatter: UsageFormatter(),
-            )) {
+            )) { _ in
+                // A preview keeps its badge window.
+            } quit: {
                 // A preview has nothing to quit.
             }
         }
@@ -64,13 +76,17 @@ private enum PreviewState {
     }
 }
 
-/// The app's menu: the weekly and five-hour usage, why the last refresh failed if it
-/// did, when the numbers arrived, and Quit.
+/// The app's menu: the weekly and five-hour usage, which of them the badge shows, why
+/// the last refresh failed if it did, when the numbers arrived, and Quit.
 public struct UsageMenu: View {
     private let model: UsageMenuViewModel
 
     public var body: some View {
-        UsageMenuItems(presentation: model.presentation) { model.quit() }
+        UsageMenuItems(presentation: model.presentation) { window in
+            model.showInMenuBar(window)
+        } quit: {
+            model.quit()
+        }
     }
 
     /// `App/` builds the model, because its ports need `ClaudeUsageBarPlatform`'s adapters.

@@ -177,4 +177,42 @@ struct UsagePresentationTests {
     func `the quit item names the app`() {
         #expect(Self.english(UsagePresentation.quitTitle) == "Quit ClaudeUsageBar")
     }
+
+    // MARK: - Badge window
+
+    @Test
+    func `the five-hour badge shows the five-hour percentage`() {
+        let shown = UsagePresentation(
+            state: UsageState(snapshot: Self.snapshot, failure: nil, lastUpdated: Self.updated),
+            formatter: Self.formatter("en_GB", zone: "UTC"),
+            badgeWindow: .fiveHour,
+        )
+        #expect(shown.badgeWindow == .fiveHour)
+        #expect(shown.badgeText == "19")
+        #expect(Self.english(shown.badgeAccessibilityLabel) == "Claude 5-hour usage 19 percent")
+        #expect(Self.english(shown.weeklyUsage) == "Weekly: 76%")
+    }
+
+    @Test
+    func `a snapshot without a five-hour window leaves the five-hour badge unknown`() {
+        let partial = UsageSnapshot(
+            fiveHour: nil,
+            sevenDay: UsageWindow(utilization: 76, resetsAt: nil),
+        )
+        let shown = UsagePresentation(
+            state: UsageState(snapshot: partial),
+            formatter: Self.formatter("en_GB", zone: "UTC"),
+            badgeWindow: .fiveHour,
+        )
+        #expect(shown.badgeText == "--")
+        #expect(Self.english(shown.badgeAccessibilityLabel) == "Claude 5-hour usage unavailable")
+    }
+
+    @Test
+    func `the badge window choice has a heading and a title per window`() {
+        #expect(BadgeWindow.menuOrder == [.weekly, .fiveHour])
+        #expect(Self.english(UsagePresentation.badgeWindowHeading) == "Show in Menu Bar")
+        #expect(Self.english(UsagePresentation.title(for: .weekly)) == "Weekly")
+        #expect(Self.english(UsagePresentation.title(for: .fiveHour)) == "5-hour")
+    }
 }

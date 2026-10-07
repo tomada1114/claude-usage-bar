@@ -6,7 +6,7 @@
 
 ClaudeUsageBar is a macOS menu-bar app that shows your Claude Code **weekly usage
 limit** as a number in the menu bar — `76` means 76% of this week's limit is used.
-Click it for the details:
+The menu can switch the number to the five-hour limit instead. Click it for the details:
 
 ```text
 Weekly: 76%
@@ -15,13 +15,18 @@ Resets Wed 21:00
 5-hour: 19%
 Resets 22:00
 ─────────────
+Show in Menu Bar
+  ✓ Weekly
+    5-hour
+─────────────
 Updated 14:05
 Quit ClaudeUsageBar   ⌘Q
 ```
 
 The number sits inside the outline of Clawd, Claude Code's pixel mascot, which follows
 the menu bar's light, dark, and tinted appearance; it reads `--` until the first refresh
-succeeds. The app refreshes at launch and every minute. When a refresh fails, the
+succeeds. The weekly/five-hour choice lasts until the app quits; every launch starts on
+the weekly limit. The app refreshes at launch and every minute. When a refresh fails, the
 menu keeps the last good numbers and adds one line saying why: not signed in to Claude
 Code, sign-in expired (open Claude Code to renew it), the server could not be reached,
 or it answered with something unexpected.

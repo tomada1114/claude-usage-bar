@@ -165,7 +165,8 @@ private enum PreviewState {
     }
 }
 
-/// The app's menu bar label: the weekly usage badge, kept current by the view model.
+/// The app's menu bar label: the usage badge for the chosen window, kept current by the
+/// view model.
 public struct UsageBadgeLabel: View {
     private let model: UsageMenuViewModel
 

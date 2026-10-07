@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refresh at launch and every minute, reading Claude Code's OAuth token from the
   login keychain with `/usr/bin/security` and querying Anthropic's undocumented OAuth
   usage endpoint
+- A "Show in Menu Bar" choice in the menu that switches the badge between the weekly
+  and the five-hour usage, starting on weekly at every launch
 
 ### Removed
 
