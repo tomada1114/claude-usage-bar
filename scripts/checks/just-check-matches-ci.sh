@@ -207,7 +207,7 @@ while IFS="$(printf '\t')" read -r line job text; do
         esac
         CI_RECIPES="${CI_RECIPES}${recipe}
 "
-        if ! printf '%s\n' "${GATES}" | grep -qxF -- "${recipe}" && ! in_list "${recipe}" "${CI_ONLY}"; then
+        if ! grep -qxF -- "${recipe}" <<<"${GATES}" && ! in_list "${recipe}" "${CI_ONLY}"; then
             check_problem "${CI}:${line}: job \`${job}\` runs \`just ${recipe}\` (or its script), which \`just check\` does not run"
         fi
     done
@@ -217,7 +217,7 @@ EOF
 
 for gate in ${GATES}; do
     in_list "${gate}" "${LOCAL_ONLY}" && continue
-    if ! printf '%s' "${CI_RECIPES}" | grep -qxF -- "${gate}"; then
+    if ! grep -qxF -- "${gate}" <<<"${CI_RECIPES}"; then
         check_problem "${JUSTFILE}: \`just check\` runs \`just ${gate}\`, but no ${CI} step runs it or a script its recipe calls"
     fi
 done
@@ -226,12 +226,12 @@ check_report ERR_CHECK_JUST_CI_DIVERGED "\`just check\` and CI run different gat
     "add the gate to the side that lacks it — a CI step calls the same script or \`just <recipe>\`, and a new local gate joins \`check:\` — or, if it genuinely belongs on one side only, add it with its reason to LOCAL_ONLY or CI_ONLY in scripts/checks/just-check-matches-ci.sh"
 
 for recipe in ${LOCAL_ONLY}; do
-    if ! printf '%s\n' "${GATES}" | grep -qxF -- "${recipe}"; then
+    if ! grep -qxF -- "${recipe}" <<<"${GATES}"; then
         check_problem "LOCAL_ONLY names \`${recipe}\`, which \`just check\` no longer runs"
     fi
 done
 for recipe in ${CI_ONLY}; do
-    if ! printf '%s' "${CI_RECIPES}" | grep -qxF -- "${recipe}"; then
+    if ! grep -qxF -- "${recipe}" <<<"${CI_RECIPES}"; then
         check_problem "CI_ONLY names \`${recipe}\`, which no ${CI} step runs any more"
     fi
 done

@@ -390,6 +390,8 @@ reasons behind them, with worked examples, are in the `writing-repo-scripts` ski
 - `#!/usr/bin/env bash` and `set -euo pipefail`, and bash 3.2-compatible (macOS
   `/bin/bash`): no associative arrays, no `mapfile`/`readarray`, no `${var,,}`, and no
   `"${arr[@]}"` on a possibly empty array under `set -u` (use `${arr[@]+"${arr[@]}"}`).
+  Under `pipefail`, never pipe into a reader that exits early (`grep -q`, `head`): feed
+  it a here-string, `grep -qxF -- "${x}" <<<"${list}"`.
 - `shellcheck`-clean — `scripts/lint.sh` checks every tracked `*.sh`
   outside the generated `.claude/skills/` mirror.
 - Pinned tools are called by bare name; the caller provides PATH (`mise exec -- …`

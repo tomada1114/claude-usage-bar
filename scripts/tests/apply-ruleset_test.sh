@@ -168,7 +168,7 @@ PY
     local context
     while IFS= read -r context; do
         [ -n "${context}" ] || continue
-        printf '%s\n' "${job_names}" | grep -qxF "${context}" ||
+        grep -qxF "${context}" <<<"${job_names}" ||
             _fail "ruleset context \"${context}\" is not a job name: in any .github/workflows/*.yml file"
     done <<EOF
 ${contexts}

@@ -69,7 +69,7 @@ trap 'rm -f "${GH_STDERR}"' EXIT
 classify_failure() {
     local action="$1" message
     message=$(cat "${GH_STDERR}")
-    if printf '%s' "${message}" | grep -qi 'upgrade'; then
+    if grep -qi 'upgrade' <<<"${message}"; then
         fail ERR_RULESET_PLAN_UNSUPPORTED \
             "${action} was refused: rulesets need a paid GitHub plan on a private repository" \
             "GitHub Free supports rulesets on public repositories only" \
