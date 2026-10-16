@@ -140,7 +140,7 @@ else
     ORIGIN_URL="unknown"
     ORIGIN_TREE="$(git rev-parse 'HEAD^{tree}' 2>/dev/null || echo unknown)"
     if [ "$(git rev-parse --is-shallow-repository 2>/dev/null || echo false)" != "true" ] &&
-        git rev-list --max-parents=0 HEAD 2>/dev/null | grep -qx "${TEMPLATE_ROOT}"; then
+        grep -qx "${TEMPLATE_ROOT}" <<<"$(git rev-list --max-parents=0 HEAD 2>/dev/null)"; then
         ORIGIN_SHA="$(git rev-parse HEAD)"
         ORIGIN_URL="$(git config --get remote.origin.url || echo unknown)"
     fi
