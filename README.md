@@ -6,7 +6,8 @@
 
 ClaudeUsageBar is a macOS menu-bar app that shows your Claude Code **weekly usage
 limit** as a number in the menu bar — `76` means 76% of this week's limit is used.
-The menu can switch the number to the five-hour limit instead. Click it for the details:
+The menu can switch the number to the five-hour limit instead. Click it for the details
+(the Fable line appears only when your plan has a Fable limit):
 
 ```text
 Weekly: 76%
@@ -14,6 +15,9 @@ Resets Wed 21:00
 ─────────────
 5-hour: 19%
 Resets 22:00
+─────────────
+Fable: 6%
+Resets Wed 21:00
 ─────────────
 Show in Menu Bar
   ✓ Weekly

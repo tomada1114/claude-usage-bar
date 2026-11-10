@@ -15,6 +15,18 @@ struct UsageResponseTests {
     "member_dashboard_available":false}
     """.utf8)
 
+    static let weeklyAll = #"{"kind":"weekly_all","percent":4,"scope":null}"#
+    static let fableEntry = """
+    {"kind":"weekly_scoped","group":"weekly","percent":6,"is_active":true,
+    "resets_at":"2026-11-11T12:00:00.560298+00:00",
+    "scope":{"model":{"id":null,"display_name":"Fable"},"surface":null}}
+    """
+
+    /// The shape of a real response: the model's limit is an entry of `limits`, not a key.
+    static func limits(_ entries: String) -> UsageResponse {
+        ok(#"{"seven_day":null,"limits":[\#(entries)]}"#)
+    }
+
     static func ok(_ json: String) -> UsageResponse {
         UsageResponse(statusCode: 200, body: Data(json.utf8))
     }
@@ -65,6 +77,47 @@ struct UsageResponseTests {
         let snapshot = try Self.ok(json).snapshot()
         #expect(snapshot.sevenDay == nil)
         #expect(snapshot.fiveHour?.utilization == 19)
+    }
+
+    @Test
+    func `reads the Fable window from the scoped weekly limit`() throws {
+        let snapshot = try Self.limits("\(Self.weeklyAll),\(Self.fableEntry)").snapshot()
+        #expect(snapshot.fable?.utilization == 6)
+        // 2026-11-11T12:00Z worked out by hand, plus the fraction.
+        let reset = try #require(snapshot.fable?.resetsAt).timeIntervalSince1970
+        #expect(abs(reset - 1_794_398_400.560298) < 1e-5)
+    }
+
+    @Test
+    func `a response without a Fable limit has no Fable window`() throws {
+        #expect(try Self.limits(Self.weeklyAll).snapshot().fable == nil)
+        #expect(try Self.ok(#"{"seven_day":null}"#).snapshot().fable == nil)
+        #expect(try Self.ok(#"{"limits":null}"#).snapshot().fable == nil)
+    }
+
+    @Test
+    func `a scoped limit for another model or kind is not Fable`() throws {
+        let sonnet = Self.fableEntry.replacingOccurrences(of: "Fable", with: "Sonnet")
+        let notScoped = Self.fableEntry.replacingOccurrences(
+            of: "weekly_scoped",
+            with: "weekly_all",
+        )
+        #expect(try Self.limits(sonnet).snapshot().fable == nil)
+        #expect(try Self.limits(notScoped).snapshot().fable == nil)
+    }
+
+    @Test
+    func `a malformed limits entry spoils only itself`() throws {
+        let entries = #"3,"x",{"kind":"weekly_scoped","percent":"6","scope":null},"# + Self
+            .fableEntry
+        #expect(try Self.limits(entries).snapshot().fable?.utilization == 6)
+        #expect(try Self.ok(#"{"limits":"none"}"#).snapshot().fable == nil)
+    }
+
+    @Test
+    func `a Fable limit without a percent is absent`() throws {
+        let noPercent = Self.fableEntry.replacingOccurrences(of: #""percent":6,"#, with: "")
+        #expect(try Self.limits(noPercent).snapshot().fable == nil)
     }
 
     @Test(arguments: [401, 403])

@@ -135,6 +135,25 @@ public struct UsagePresentation: Sendable {
         state.snapshot?.fiveHour?.resetsAt.map { Self.resets(formatter.time($0)) }
     }
 
+    /// The Fable weekly limit's line, such as `Fable: 6%`; `nil` when the account has no
+    /// Fable limit, so the menu shows no empty line for it.
+    public var fableUsage: LocalizedStringResource? {
+        state.snapshot?.fable.map { window in
+            let value = formatter.percent(window.percent)
+            return LocalizedStringResource(
+                "menu.fable",
+                defaultValue: "Fable: \(value)",
+                bundle: .module,
+                comment: "Menu line for the Fable weekly limit. The argument is a formatted percentage, such as 6%.",
+            )
+        }
+    }
+
+    /// When the Fable limit resets, such as `Resets Wed 21:00`; `nil` when unknown.
+    public var fableReset: LocalizedStringResource? {
+        state.snapshot?.fable?.resetsAt.map { Self.resets(formatter.weekdayAndTime($0)) }
+    }
+
     /// Why the last refresh failed, or `nil` when it did not.
     public var failure: LocalizedStringResource? {
         state.failure.flatMap(Self.line(for:))

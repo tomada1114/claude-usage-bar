@@ -26,15 +26,19 @@ public struct UsageWindow: Equatable, Sendable {
     }
 }
 
-/// The two windows this app shows, from one successful refresh.
+/// The windows this app shows, from one successful refresh.
 public struct UsageSnapshot: Equatable, Sendable {
     /// The rolling five-hour window (`five_hour`).
     public let fiveHour: UsageWindow?
     /// The weekly window (`seven_day`) — the menu bar's number by default.
     public let sevenDay: UsageWindow?
+    /// The weekly limit scoped to the Fable model, which the endpoint reports as a
+    /// `limits` entry rather than a key of its own; `nil` when the account has none.
+    public let fable: UsageWindow?
 
-    public init(fiveHour: UsageWindow?, sevenDay: UsageWindow?) {
+    public init(fiveHour: UsageWindow?, sevenDay: UsageWindow?, fable: UsageWindow? = nil) {
         self.fiveHour = fiveHour
         self.sevenDay = sevenDay
+        self.fable = fable
     }
 }

@@ -28,20 +28,109 @@ private struct WindowPayload: Decodable {
     }
 }
 
-/// The two keys of the endpoint's JSON object this app reads.
+/// The `scope.model` object of a `limits` entry.
+private struct ModelPayload: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case displayName = "display_name"
+    }
+
+    let displayName: String?
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayName = try? container.decodeIfPresent(String.self, forKey: .displayName)
+    }
+}
+
+/// The `scope` object of a `limits` entry.
+private struct ScopePayload: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case model
+    }
+
+    let model: ModelPayload?
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        model = try? container.decodeIfPresent(ModelPayload.self, forKey: .model)
+    }
+}
+
+/// One entry of the endpoint's `limits` array, read only far enough to tell whether it is
+/// the Fable model's weekly limit; each field is read on its own, like ``WindowPayload``.
+private struct LimitPayload: Decodable {
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case percent
+        case resetsAt = "resets_at"
+        case scope
+    }
+
+    private static let scopedKind = "weekly_scoped"
+    private static let fableName = "Fable"
+
+    private let kind: String?
+    private let percent: Double?
+    private let resetsAt: String?
+    private let scope: ScopePayload?
+
+    /// `true` for the weekly limit scoped to Fable.
+    var isFable: Bool {
+        kind == Self.scopedKind && scope?.model?.displayName == Self.fableName
+    }
+
+    /// `nil` without a percent: an entry with no number has nothing to show.
+    var window: UsageWindow? {
+        guard let percent else {
+            return nil
+        }
+        return UsageWindow(
+            utilization: percent,
+            resetsAt: resetsAt.flatMap(UsageTimestamp.date(from:)),
+        )
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        kind = try? container.decodeIfPresent(String.self, forKey: .kind)
+        percent = try? container.decodeIfPresent(Double.self, forKey: .percent)
+        resetsAt = try? container.decodeIfPresent(String.self, forKey: .resetsAt)
+        scope = try? container.decodeIfPresent(ScopePayload.self, forKey: .scope)
+    }
+}
+
+/// The keys of the endpoint's JSON object this app reads.
 private struct Payload: Decodable {
     private enum CodingKeys: String, CodingKey {
         case fiveHour = "five_hour"
         case sevenDay = "seven_day"
+        case limits
     }
 
     let fiveHour: WindowPayload?
     let sevenDay: WindowPayload?
+    let fable: UsageWindow?
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         fiveHour = try? container.decodeIfPresent(WindowPayload.self, forKey: .fiveHour)
         sevenDay = try? container.decodeIfPresent(WindowPayload.self, forKey: .sevenDay)
+        // A bad element must spoil only itself, so each entry decodes through an optional.
+        let limits = (
+            try? container.decodeIfPresent([Lossy<LimitPayload>].self, forKey: .limits),
+        ) ??
+            []
+        fable = limits.lazy.compactMap(\.value).first(where: \.isFable)?.window
+    }
+}
+
+/// Decodes to `nil` instead of throwing, so one malformed array element does not fail
+/// the whole array.
+private struct Lossy<Value: Decodable>: Decodable {
+    let value: Value?
+
+    init(from decoder: any Decoder) {
+        value = try? Value(from: decoder)
     }
 }
 
@@ -88,6 +177,7 @@ public struct UsageResponse: Equatable, Sendable {
         return UsageSnapshot(
             fiveHour: payload.fiveHour?.window,
             sevenDay: payload.sevenDay?.window,
+            fable: payload.fable,
         )
     }
 }

@@ -33,11 +33,11 @@ module) are enforced from day one.
 - **The core interaction** — glancing at the menu bar: the rounded weekly percentage
   (or the five-hour one, when chosen in the menu), a bare number such as `76` in a thin
   outlined monochrome badge, legible at menu bar text size and kept current every
-  minute. Clicking it opens a native menu with the weekly and five-hour percentages,
+  minute. Clicking it opens a native menu with the weekly, five-hour, and (when the account has one) Fable weekly percentages,
   when each resets, which of the two the badge shows, why the last refresh failed (if it
   did, beside the last good numbers), when the numbers arrived, and Quit.
 - **Non-goals** — no colors, thresholds, or warning states on the badge; no
-  notifications; no limits beyond the weekly and five-hour windows (no per-model, Opus,
+  notifications; no limits beyond the weekly, five-hour, and Fable weekly windows (no Opus, Sonnet,
   or other breakdowns the endpoint reports); no manual refresh item; no token refresh —
   an expired token is fixed by running Claude Code; no settings window and no saved
   preferences — the badge's weekly/five-hour choice resets to weekly at launch; no history or charts;

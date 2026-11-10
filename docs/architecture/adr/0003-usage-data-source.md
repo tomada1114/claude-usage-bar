@@ -47,8 +47,10 @@ Option 1.
   `Authorization: Bearer <token>` and `anthropic-beta: oauth-2025-04-20`
   (`UsageEndpoint`), and hands the status and body to Core. `UsageResponse.snapshot()`
   decides: 2xx decodes, 401 and 403 mean the token expired, anything else is an
-  unexpected response. Decoding reads only `five_hour` and `seven_day`
-  (`utilization`, `resets_at`) and is lenient: a missing, `null`, or wrongly typed field
+  unexpected response. Decoding reads `five_hour` and `seven_day`
+  (`utilization`, `resets_at`) and the Fable weekly limit, which is the `limits` entry
+  with `kind` `weekly_scoped` and `scope.model.display_name` `Fable` (`percent`,
+  `resets_at`), and is lenient: a missing, `null`, or wrongly typed field
   empties only itself. `resets_at` is parsed by Core's own `UsageTimestamp`, because it
   arrives with six fractional digits or none.
 - **No token refresh.** The app never uses the refresh token. A 401 or 403 shows
@@ -107,6 +109,10 @@ stored credential for numbers Claude Code already has.
   objects (`utilization` 0–100, `resets_at` such as `2026-09-30T12:00:00.264575+00:00`)
   among many other keys; an invalid bearer token answers 401. No public Anthropic
   documentation for this endpoint was found.
+- Observed 2026-11-10: the same response carries a `limits` array whose
+  `weekly_scoped` entry with `scope.model.display_name` `Fable` reports `percent` (an
+  integer) and `resets_at`; no top-level key of its own exists for it. The account's
+  `five_hour` was `null` at that moment.
 
 ## Related
 
