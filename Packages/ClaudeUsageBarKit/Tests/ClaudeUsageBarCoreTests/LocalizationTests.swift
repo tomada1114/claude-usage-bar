@@ -112,6 +112,7 @@ struct LocalizationTests {
                         utilization: 76,
                         resetsAt: Date(timeIntervalSince1970: 1_790_769_600),
                     ),
+                    fable: UsageWindow(utilization: 6, resetsAt: nil),
                 ),
                 failure: nil,
                 lastUpdated: Date(timeIntervalSince1970: 1_790_690_700),
@@ -132,6 +133,7 @@ struct LocalizationTests {
         }
         let optionalCases = [
             known.weeklyReset.map { Case(resource: $0, arguments: ["Wed 12:00"]) },
+            known.fableUsage.map { Case(resource: $0, arguments: ["6%"]) },
             known.updated.map { Case(resource: $0, arguments: ["14:05"]) },
         ].compactMap(\.self)
         return failureCases + optionalCases + [

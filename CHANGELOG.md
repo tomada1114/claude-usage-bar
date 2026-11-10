@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   usage endpoint
 - A "Show in Menu Bar" choice in the menu that switches the badge between the weekly
   and the five-hour usage, starting on weekly at every launch
+- A Fable line in the menu with the Fable weekly limit's percentage and reset time,
+  shown only when the account has one
 
 ### Removed
 

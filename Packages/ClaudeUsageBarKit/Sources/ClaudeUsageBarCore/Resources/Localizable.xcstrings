@@ -133,6 +133,17 @@
         }
       }
     },
+    "menu.fable" : {
+      "comment" : "Menu line for the Fable weekly limit. The argument is a formatted percentage, such as 6%.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fable: %@"
+          }
+        }
+      }
+    },
     "menu.fiveHour" : {
       "comment" : "Menu line for the five-hour usage limit. The argument is a formatted percentage, such as 19%.",
       "localizations" : {

@@ -96,6 +96,22 @@ struct UsagePresentationTests {
     }
 
     @Test
+    func `the Fable window shows its percentage and reset time, and is absent without one`() {
+        let withFable = UsageSnapshot(
+            fiveHour: nil,
+            sevenDay: nil,
+            fable: UsageWindow(utilization: 5.6, resetsAt: Self.weeklyReset),
+        )
+        let shown = Self.presentation(UsageState(snapshot: withFable))
+        #expect(Self.english(shown.fableUsage) == "Fable: 6%")
+        #expect(Self.english(shown.fableReset) == "Resets Wed 12:00")
+        let without = Self.presentation(UsageState(snapshot: Self.snapshot))
+        #expect(without.fableUsage == nil)
+        #expect(without.fableReset == nil)
+        #expect(Self.presentation(UsageState()).fableUsage == nil)
+    }
+
+    @Test
     func `a window without a reset time shows no reset line`() {
         let partial = UsageSnapshot(
             fiveHour: UsageWindow(utilization: 0, resetsAt: nil),

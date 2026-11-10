@@ -18,6 +18,13 @@ struct UsageMenuItems: View {
         if let fiveHourReset = presentation.fiveHourReset {
             Text(fiveHourReset)
         }
+        if let fableUsage = presentation.fableUsage {
+            Divider()
+            Text(fableUsage)
+            if let fableReset = presentation.fableReset {
+                Text(fableReset)
+            }
+        }
         Divider()
         Text(UsagePresentation.badgeWindowHeading)
         ForEach(BadgeWindow.menuOrder, id: \.self) { window in
@@ -47,6 +54,7 @@ private enum PreviewState {
     static let secondsPerHour = minutesPerHour * secondsPerMinute
     static let fiveHourPercent: Double = 19
     static let weeklyPercent: Double = 76
+    static let fablePercent: Double = 6
     static let hoursToFiveHourReset: TimeInterval = 2
     static let hoursToWeeklyReset: TimeInterval = 48
     static let minutesSinceStaleUpdate: TimeInterval = 10
@@ -57,6 +65,10 @@ private enum PreviewState {
         ),
         sevenDay: UsageWindow(
             utilization: weeklyPercent,
+            resetsAt: now.addingTimeInterval(hoursToWeeklyReset * secondsPerHour),
+        ),
+        fable: UsageWindow(
+            utilization: fablePercent,
             resetsAt: now.addingTimeInterval(hoursToWeeklyReset * secondsPerHour),
         ),
     )
@@ -76,7 +88,8 @@ private enum PreviewState {
     }
 }
 
-/// The app's menu: the weekly and five-hour usage, which of them the badge shows, why
+/// The app's menu: the weekly, five-hour and (when the account has one) Fable usage, which of them
+/// the badge shows, why
 /// the last refresh failed if it did, when the numbers arrived, and Quit.
 public struct UsageMenu: View {
     private let model: UsageMenuViewModel
